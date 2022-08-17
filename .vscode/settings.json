@@ -1,5 +1,5 @@
 {
-  "window.title": "UITPAK2-BE${separator}${dirty}${activeEditorShort}${separator}${rootName}${separator}${appName}",
+  "window.title": "open-home-automation${separator}${dirty}${activeEditorShort}${separator}${rootName}${separator}${appName}",
   "typescript.tsdk": "./node_modules/typescript/lib",
   "thunder-client.loadFromProject": true,
   "thunder-client.customLocation": "./",
