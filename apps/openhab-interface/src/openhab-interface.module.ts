@@ -1,10 +1,19 @@
-import { Module } from '@nestjs/common';
-import { OpenhabInterfaceController } from './openhab-interface.controller';
-import { OpenhabInterfaceService } from './openhab-interface.service';
+import { Module } from '@nestjs/common'
+import { CoreService } from '@core/core.service'
+import { OpenhabInterfaceController } from './openhab-interface.controller'
+import { OpenhabInterfaceService } from './openhab-interface.service'
+import { ConfigModule } from '@nestjs/config'
+import configuration from '@core/configuration'
+
+console.log(configuration())
 
 @Module({
-  imports: [],
+  imports: [
+    ConfigModule.forRoot({
+      load: [configuration],
+    }),
+  ],
   controllers: [OpenhabInterfaceController],
-  providers: [OpenhabInterfaceService],
+  providers: [OpenhabInterfaceService, CoreService],
 })
 export class OpenhabInterfaceModule {}

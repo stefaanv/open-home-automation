@@ -6,6 +6,7 @@
   "thunder-client.workspaceRelativePath": "./thunder-tests",
   "workbench.iconTheme": "material-icon-theme",
   "thunder-client.saveRequestOnSend": false,
+  "js/ts.implicitProjectConfig.experimentalDecorators": true,
   "material-icon-theme.files.associations": {
     "*.settings.ts": "Settings",
     "*.setting.ts": "Settings",
