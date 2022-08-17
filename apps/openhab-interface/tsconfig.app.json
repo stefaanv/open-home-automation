@@ -2,8 +2,29 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "declaration": false,
-    "outDir": "../../dist/apps/openhab-interface"
+    "outDir": "../../dist/apps/openhab-interface",
+    "paths": {
+      "@core": [
+        "libs/core/src"
+      ],
+      "@core/*": [
+        "libs/core/src/*"
+      ],
+      "@config": [
+        "config/"
+      ],
+      "@config/*": [
+        "config/*"
+      ]
+    }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*spec.ts"
+  ]
 }
