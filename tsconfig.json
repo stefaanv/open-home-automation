@@ -28,7 +28,13 @@
       "@src/*": [
         "./src/*"
       ],
-    },
+      "@core": [
+        "libs/core/src"
+      ],
+      "@core/*": [
+        "libs/core/src/*"
+      ]
+    }
   },
   "include": [
     "src/**/*"
