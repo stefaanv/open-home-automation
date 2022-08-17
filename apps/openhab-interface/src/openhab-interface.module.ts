@@ -5,8 +5,6 @@ import { OpenhabInterfaceService } from './openhab-interface.service'
 import { ConfigModule } from '@nestjs/config'
 import configuration from '@core/configuration'
 
-console.log(configuration())
-
 @Module({
   imports: [
     ConfigModule.forRoot({
