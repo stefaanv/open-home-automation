@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core'
 import { OpenhabInterfaceModule } from './openhab-interface.module'
+import { OpenhabInterfaceService } from './openhab-interface.service'
 //TODO remove comments
 // import { CoreService } from '@core/core.service'
 // import { ConfigService } from '@nestjs/config'
@@ -13,6 +14,7 @@ async function bootstrap() {
   // logger.setContext('main')
   // logger.error('error')
   // cs.test(config.get<string>('test'))
+  // const oh = app.get(OpenhabInterfaceService)
   await app.listen(3000)
 }
 bootstrap()

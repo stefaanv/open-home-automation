@@ -3,6 +3,8 @@
   "compilerOptions": {
     "declaration": false,
     "outDir": "../../dist/apps/openhab-interface",
+    // "allowSyntheticDefaultImports": false,
+    "esModuleInterop": true,
     "paths": {
       "@core": [
         "libs/core/src"

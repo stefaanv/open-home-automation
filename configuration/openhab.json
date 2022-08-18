@@ -1,3 +1,16 @@
 {
-  "eventsUrl": "http: //openhab-rpi4:8080/rest/events"
+  "eventsUrl": "http://openhab-rpi4:8080/rest/events",
+  "generalTopicFilter": "openhab\\/items\\/(?<topic>\\w+)\\/statechanged",
+  "items": [
+    {
+      "topicFilter": "(?<topic>\\w+)_(temp|temp_rfx)",
+      "typeFilter": "ItemStateChangedEvent",
+      "transform": "tempTransformer"
+    },
+    {
+      "topicFilter": "vlg_(?<topic>\\w+)",
+      "typeFilter": "ItemStateChangedEvent",
+      "transform": "switchTransformer"
+    }
+  ]
 }
