@@ -1,9 +1,17 @@
 import { Module } from '@nestjs/common'
-import { CoreService } from './core.service'
+import { ConfigModule } from '@nestjs/config'
 import { LoggingService } from './logging.service'
+import { MqttDriver } from './mqtt.driver'
+import configuration from '@core/configuration'
 
 @Module({
-  providers: [CoreService, LoggingService],
-  exports: [CoreService, LoggingService],
+  imports: [
+    CoreModule,
+    ConfigModule.forRoot({
+      load: [configuration],
+    }),
+  ],
+  providers: [LoggingService, MqttDriver],
+  exports: [LoggingService, MqttDriver],
 })
 export class CoreModule {}

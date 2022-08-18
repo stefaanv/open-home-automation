@@ -4,6 +4,8 @@ import { join } from 'path'
 const MAIN_CONFIG_FILENAME = 'config.json'
 const CONFIG_FOLDER = '../../../configuration'
 
+//TODO validate the configuration
+
 export default async () => {
   const content = await readFile(join(__dirname, CONFIG_FOLDER, MAIN_CONFIG_FILENAME), { encoding: 'utf-8' })
   const configuration = JSON.parse(content)
@@ -14,6 +16,6 @@ export default async () => {
     const application = file.replace('.json', '')
     configuration[application] = JSON.parse(content)
   }
-  console.log(configuration)
+  // console.log(configuration)
   return configuration
 }
