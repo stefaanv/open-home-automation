@@ -5,11 +5,18 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "pwa-chrome",
+      "type": "node",
       "request": "launch",
-      "name": "Launch Chrome against localhost",
-      "url": "http://localhost:8080",
-      "webRoot": "${workspaceFolder}"
+      "name": "Launch Program",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "preLaunchTask": "${defaultBuildTask}",
+      "program": "${workspaceFolder}/apps/openhab-interface/src/main.ts",
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js",
+        "!**/node_modules/**"
+      ]
     }
   ]
 }
