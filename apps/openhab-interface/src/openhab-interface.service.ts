@@ -46,9 +46,7 @@ export class OpenhabInterfaceService {
     this.log.setContext(OpenhabInterfaceService.name)
     this.mqttDriver.setTopicUpdateCallback(console.log)
     const eventUrl = this.config.get<string>('openhab.eventsUrl', '')
-    console.log(eventUrl)
     const itemsConfig = this.config.get<ItemConfig[]>('openhab.items', [])
-    console.log(itemsConfig)
     this._items = itemsConfig.map<ItemConfig>(ic => ({
       topicFilter: new RegExp(ic.topicFilter),
       typeFilter: new RegExp(ic.typeFilter),
@@ -56,7 +54,6 @@ export class OpenhabInterfaceService {
     }))
 
     const es = new EventSource(eventUrl)
-    console.log(es)
     es.onmessage = (evt: MessageEvent<any>) => this.eventHandler(evt)
     this.log.log(`constructor finished`)
   }
