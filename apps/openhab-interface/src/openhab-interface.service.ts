@@ -23,23 +23,6 @@ type OpenHabEvent = {
   type: string
 }
 
-/*
-const tempTransformer = (time: Date, payload: { value: string }) => ({
-  time,
-  temperature: parseFloat(payload.value).toFixed(1),
-})
-
-const humidityTransformer = (time: Date, payload: { value: string }) => ({
-  time,
-  humidity: parseInt(payload.value),
-})
-
-const switchTransformer = (time: Date, payload: { value: string }) => ({
-  time,
-  state: payload.value.toLowerCase(),
-})
-*/
-
 @Injectable()
 export class OpenhabInterfaceService {
   private readonly _topicFilter: RegExp
@@ -66,23 +49,35 @@ export class OpenhabInterfaceService {
       }
     })
 
+    // Setting up de SSE link to Openhab
     const es = new EventSource(eventUrl)
     es.onmessage = (evt: MessageEvent<any>) => this.eventHandler(evt)
-    this.log.log(`constructor finished`)
   }
 
+  // Openhab SSE link event handler
   private eventHandler(evt: MessageEvent<any>) {
     const evtData: OpenHabEvent = JSON.parse(evt.data)
-    if (!this._topicFilter.test(evtData.topic)) return // doesn't even pass the openHAB general topic filter
-    const topicFilterResult = this._topicFilter.exec(evtData.topic)
-    const openhabTopic = topicFilterResult.groups?.topic
-    if (!openhabTopic) return // unable to extract
     this._items.forEach(item => {
-      console.log(evtData)
-      console.log(openhabTopic)
+      const topicFilterResult = item.topicFilter.exec(evtData.topic)
+      const typeFilterResult = item.typeFilter.exec(evtData.type)
+      if (item.topicFilter.test(evtData.topic) && item.typeFilter.test(evtData.type)) {
+        console.log(evtData)
+      }
     })
     if (evtData.type === 'ItemStateChangedEvent') {
       const payload = JSON.parse(evtData.payload)
+      // if (itemConfig) {
+      //   const now = new Date()
+      //   const tranformedPayload = itemConfig.transform(now, payload)
+      //   if (this.mqttClientConnected) {
+      //     this.logger.log(`sending to "${itemConfig.mqttTopic}" -> ${JSON.stringify(tranformedPayload)}`)
+      //     this.mqttClient.publish(itemConfig.mqttTopic, JSON.stringify(tranformedPayload))
+      //   } else {
+      //     this.logger.error(`Unable to sent ${JSON.stringify(tranformedPayload)} to ${itemConfig.mqttTopic}`)
+      //   }
+      // } else {
+      //   this.logger.warn(`Unknown openHAB topic "${evtData.topic}" : ${JSON.stringify(payload)}`)
+      // }
     }
   }
 }
