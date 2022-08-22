@@ -1,7 +1,6 @@
-import { SwitchStatus as SwitchStats } from '@core/itemUpdates.type'
 import { LoggingService } from '@core/logging.service'
-import { MqttDriver, TopicUpdate } from '@core/mqtt.driver'
-import { ItemUpdate, OldState } from '@core/types/ItemUpdate.interface'
+import { MqttDriver } from '@core/mqtt.driver'
+import { ItemUpdate, OldState } from '@core/itemUpdate.type'
 import { SwitchState } from '@core/types/SwitchState'
 import { TemperatureState } from '@core/types/TemperatureState'
 import { Injectable } from '@nestjs/common'
@@ -61,15 +60,15 @@ export class OpenhabInterfaceService {
   private _processingStarted = false
 
   constructor(
-    private readonly log: LoggingService,
-    private readonly mqttDriver: MqttDriver,
-    private readonly config: ConfigService,
+    private readonly _log: LoggingService,
+    private readonly _mqttDriver: MqttDriver,
+    private readonly _config: ConfigService,
   ) {
-    this.log.setContext(OpenhabInterfaceService.name)
-    this.mqttDriver.setTopicUpdateCallback(console.log)
-    this._topicFilter = new RegExp(this.config.get<string>('openhab.generalTopicFilter', ''))
-    const eventUrl = this.config.get<string>('openhab.eventsUrl', '')
-    const mappersConfig = this.config.get<ItemMapperConfig[]>('openhab.itemsMappers', [])
+    this._log.setContext(OpenhabInterfaceService.name)
+    this._mqttDriver.setTopicUpdateCallback(console.log)
+    this._topicFilter = new RegExp(this._config.get<string>('openhab.generalTopicFilter', ''))
+    const eventUrl = this._config.get<string>('openhab.eventsUrl', '')
+    const mappersConfig = this._config.get<ItemMapperConfig[]>('openhab.itemsMappers', [])
     this._itemMappers = mappersConfig.map(c => ({
       topicFilter: new RegExp(c.topicFilter),
       typeFilter: new RegExp(c.typeFilter),
@@ -82,13 +81,13 @@ export class OpenhabInterfaceService {
     const es = new EventSource(eventUrl)
     es.onmessage = (evt: MessageEvent<any>) => this.sseEventHandler(evt)
 
-    this.mqttDriver.setTopicUpdateCallback((tUpd: TopicUpdate) => this.mqttCallback(tUpd))
+    this._mqttDriver.setTopicUpdateCallback((tUpd: ItemUpdate) => this.mqttCallback(tUpd))
   }
 
   // Openhab SSE link event handler
   private sseEventHandler(evt: MessageEvent<any>) {
     if (!this._processingStarted) {
-      this.log.log(`processing of openHAB events started`)
+      this._log.log(`processing of openHAB events started`)
       this._processingStarted = true
     }
     const now = new Date()
@@ -99,9 +98,9 @@ export class OpenhabInterfaceService {
     this._itemMappers.some(im => {
       if (regexTest(openhabTopic, im.topicFilter) && regexTest(payload.type, im.typeFilter)) {
         const update = im.transformer(openhabTopic, payload, now, this._oldStates, im.customConfig)
-        const topicToUpdate = update.topic
+        const topicToUpdate = update.item
         console.log(update)
-        // callBack
+        this._mqttDriver.send(update)
         this._oldStates[topicToUpdate] = update
         return true
       }
@@ -109,7 +108,7 @@ export class OpenhabInterfaceService {
     })
   }
 
-  private mqttCallback(t: TopicUpdate) {
+  private mqttCallback(t: ItemUpdate) {
     //TODO handle messages received from MQTT
   }
 }
@@ -137,10 +136,11 @@ const SwitchTransformer: Transformer<SwitchState> = (
   }
 
   return {
+    time: now,
+    type: 'switch',
+    item: topic,
     newState: value,
     previousState,
-    time: now,
-    topic,
   }
 }
 
@@ -189,9 +189,10 @@ const TemperatureTransformer: Transformer<TemperatureState> = (
   }
 
   return {
+    time: now,
+    type: 'temperature',
+    item: topicToUpdate,
     newState,
     previousState,
-    time: now,
-    topic: topicToUpdate,
   }
 }

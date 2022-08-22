@@ -1,7 +1,7 @@
 {
   "openhabEventsUrl": "http://openhab-rpi4:8080/rest/events",
   "generalTopicFilter": "openhab\\/items\\/(?<topic>[\\w:]+)\\/statechanged",
-  "outMqttTopic": "oha\\/{{topic}}",
+  "outMqttTopicTemplate": "oha\\/{{topic}}",
   "itemsMappers": [
     {
       "topicFilter": "(?<topic>[\\w:]+(vocht|temp|temp_rfx))",

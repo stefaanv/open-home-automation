@@ -1,23 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as mqtt from 'async-mqtt'
 import { LoggingService } from './logging.service'
+import handlebars from 'handlebars'
+import { ItemUpdate } from './itemUpdate.type'
 
-export type TopicType = 'temperature' | 'somethingElse'
-
-export type TopicUpdate = {
-  topic: string
-  type: TopicType
-  time: Date
-} & Record<string, any>
-
-export type TopicUpdateCallback = (t: TopicUpdate) => void
+export type ItemUpdateCallback = (t: ItemUpdate) => void
 
 @Injectable()
 export class MqttDriver {
   private _mqttClient: mqtt.IMqttClient
-  private _callback?: TopicUpdateCallback = undefined
+  private _callback?: ItemUpdateCallback = undefined
   private readonly _topicPrefix: string
+  private _outMqttTopicTemplate: HandlebarsTemplateDelegate = undefined
 
   constructor(private readonly log: LoggingService, private readonly config: ConfigService) {
     this.log.setContext(MqttDriver.name)
@@ -36,16 +31,26 @@ export class MqttDriver {
     return this._mqttClient.connected
   }
 
-  public setTopicUpdateCallback(callback: TopicUpdateCallback) {
+  set outMqttTopicTemplate(value: string) {
+    this._outMqttTopicTemplate = handlebars.compile(value)
+  }
+
+  public setTopicUpdateCallback(callback: ItemUpdateCallback) {
+    //TODO still need to subscribe to the mqtt topic(s) !
     this._callback = callback
     this.log.debug(`MQTT callback set`)
   }
 
   private mqttReceived(topic: string, message: Buffer) {
-    const payload: TopicUpdate = JSON.parse(message.toString('utf-8'))
-    payload.topic = topic.replace(this._topicPrefix + '/', '')
+    const payload: ItemUpdate = JSON.parse(message.toString('utf-8'))
+    payload.item = topic.replace(this._topicPrefix + '/', '')
     if (this._callback) this._callback(payload)
   }
 
-  public send(update: TopicUpdate) {}
+  public send(update: ItemUpdate) {
+    if (this._outMqttTopicTemplate) {
+      const mqttTopic = this._outMqttTopicTemplate({ topic: update.item })
+      this._mqttClient.publish(mqttTopic, JSON.stringify(update))
+    }
+  }
 }

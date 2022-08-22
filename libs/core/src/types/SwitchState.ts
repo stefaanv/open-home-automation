@@ -1,1 +1,1 @@
-export type SwitchState = 'on' | 'off' | undefined
+export type SwitchState = 'on' | 'off' | 'open' | 'closed' | undefined
