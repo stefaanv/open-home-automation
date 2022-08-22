@@ -36,7 +36,7 @@ export class MqttDriver {
     return this._mqttClient.connected
   }
 
-  setTopicUpdateCallback(callback: TopicUpdateCallback) {
+  public setTopicUpdateCallback(callback: TopicUpdateCallback) {
     this._callback = callback
     this.log.debug(`MQTT callback set`)
   }
@@ -46,4 +46,6 @@ export class MqttDriver {
     payload.topic = topic.replace(this._topicPrefix + '/', '')
     if (this._callback) this._callback(payload)
   }
+
+  public send(update: TopicUpdate) {}
 }

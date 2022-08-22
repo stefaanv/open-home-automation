@@ -1,14 +1,21 @@
 {
-  "eventsUrl": "http://openhab-rpi4:8080/rest/events",
+  "openhabEventsUrl": "http://openhab-rpi4:8080/rest/events",
   "generalTopicFilter": "openhab\\/items\\/(?<topic>[\\w:]+)\\/statechanged",
+  "outMqttTopic": "oha\\/{{topic}}",
   "itemsMappers": [
     {
-      "typeFilter": "ItemStateChangedEvent",
-      "transformer": "TemperatureTransformer"
+      "topicFilter": "(?<topic>[\\w:]+(vocht|temp|temp_rfx))",
+      "typeFilter": "Quantity",
+      "transformer": "temperature",
+      "customConfig": {
+        "humidityTopicFilter": "vocht",
+        "replaceBy": "temp"
+      }
     },
     {
-      "typeFilter": "ItemStateChangedEvent",
-      "transformer": "SwitchTransformer"
+      "topicFilter": "vlg_(?<topic>[\\w:]+)",
+      "typeFilter": "OnOff",
+      "transformer": "switch"
     }
   ]
 }
