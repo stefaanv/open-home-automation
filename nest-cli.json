@@ -5,8 +5,13 @@
   "monorepo": true,
   "root": "apps/openhab-interface",
   "compilerOptions": {
-    "webpack": true,
-    "tsConfigPath": "apps/openhab-interface/tsconfig.app.json"
+    "webpack": false,
+    "tsConfigPath": "apps/openhab-interface/tsconfig.app.json",
+    "deleteOutDir": true,
+    "assets": [
+      "**/*.json"
+    ],
+    "watchAssets": true
   },
   "projects": {
     "openhab-interface": {
@@ -25,6 +30,15 @@
       "sourceRoot": "libs/core/src",
       "compilerOptions": {
         "tsConfigPath": "libs/core/tsconfig.lib.json"
+      }
+    },
+    "phoscon-interface": {
+      "type": "application",
+      "root": "apps/phoscon-interface",
+      "entryFile": "main",
+      "sourceRoot": "apps/phoscon-interface/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/phoscon-interface/tsconfig.app.json"
       }
     }
   }

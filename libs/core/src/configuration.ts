@@ -2,11 +2,13 @@ import { readFile, readdir } from 'fs/promises'
 import { join } from 'path'
 
 const MAIN_CONFIG_FILENAME = 'config.json'
-const CONFIG_FOLDER = '../../../configuration'
+//TODO config folder afhankelijk maken van voorkomen van /dist + anders voor productie
+const CONFIG_FOLDER = '../../../../../../configuration'
 
 //TODO validate the configuration
 
 export default async () => {
+  // console.log(join(__dirname, '../../../../../..'))
   const content = await readFile(join(__dirname, CONFIG_FOLDER, MAIN_CONFIG_FILENAME), { encoding: 'utf-8' })
   const configuration = JSON.parse(content)
 

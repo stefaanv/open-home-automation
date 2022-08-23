@@ -12,17 +12,17 @@ export class MqttDriver {
   private _mqttClient: mqtt.IMqttClient
   private _callback?: ItemUpdateCallback = undefined
   private readonly _topicPrefix: string
-  private _outMqttTopicTemplate: HandlebarsTemplateDelegate = undefined
+  private _outItemUpdateMqttTopicTemplate: HandlebarsTemplateDelegate = undefined
 
-  constructor(private readonly log: LoggingService, private readonly config: ConfigService) {
-    this.log.setContext(MqttDriver.name)
-    const brokerUrl = config.get<string>('mqtt.broker', '')
-    this._topicPrefix = config.get<string>('mqtt.topicPrefix', 'openHomeAutomation')
+  constructor(private readonly _log: LoggingService, private readonly _config: ConfigService) {
+    this._log.setContext(MqttDriver.name)
+    const brokerUrl = this._config.get<string>('mqtt.broker', 'mqtt://192.168.0.10')
+    this._topicPrefix = this._config.get<string>('mqtt.topicPrefix', 'oha')
+    const topicTemplate = this._config.get<string>('mqtt.itemUpdateTemplate', '{{prefix}}/itemUpdate/{{item}}')
+    this._outItemUpdateMqttTopicTemplate = handlebars.compile(topicTemplate)
     this._mqttClient = mqtt.connect(brokerUrl)
     this._mqttClient.on('connect', () => {
-      this.log.debug(`MQTT connected to ${brokerUrl}`)
-      this._mqttClient.subscribe(this._topicPrefix + '/#', (err, granted) => console.log(granted))
-      this.log.debug(`MQTT subscribed to ${this._topicPrefix + '/#'}`)
+      this._log.debug(`MQTT connected to ${brokerUrl}`)
     })
     this._mqttClient.on('message', (topic: string, message: Buffer) => this.mqttReceived(topic, message))
   }
@@ -31,25 +31,28 @@ export class MqttDriver {
     return this._mqttClient.connected
   }
 
-  set outMqttTopicTemplate(value: string) {
-    this._outMqttTopicTemplate = handlebars.compile(value)
-  }
+  public subscribe(callback: ItemUpdateCallback, subscribeTo: string[] = []) {
+    subscribeTo.forEach(s => {
+      this._mqttClient.subscribe(s)
+      this._log.debug(`MQTT subscribed to ${s}`)
+    })
 
-  public setTopicUpdateCallback(callback: ItemUpdateCallback) {
-    //TODO still need to subscribe to the mqtt topic(s) !
     this._callback = callback
-    this.log.debug(`MQTT callback set`)
+    this._log.debug(`MQTT callback set`)
   }
 
   private mqttReceived(topic: string, message: Buffer) {
     const payload: ItemUpdate = JSON.parse(message.toString('utf-8'))
     payload.item = topic.replace(this._topicPrefix + '/', '')
+    this._log.debug(`received from ${topic} ${JSON.stringify(payload)}`)
+
     if (this._callback) this._callback(payload)
   }
 
-  public send(update: ItemUpdate) {
-    if (this._outMqttTopicTemplate) {
-      const mqttTopic = this._outMqttTopicTemplate({ topic: update.item })
+  public updateItem(update: ItemUpdate) {
+    if (this._outItemUpdateMqttTopicTemplate) {
+      const mqttTopic = this._outItemUpdateMqttTopicTemplate({ item: update.item, prefix: this._topicPrefix })
+      this._log.debug(`sending update to ${mqttTopic}`)
       this._mqttClient.publish(mqttTopic, JSON.stringify(update))
     }
   }

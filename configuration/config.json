@@ -1,6 +1,7 @@
 {
   "mqtt": {
     "broker": "mqtt://192.168.0.10",
-    "topicPrefix": "openHomeAutomation"
+    "topicPrefix": "oha",
+    "itemUpdateTemplate": "{{prefix}}/itemUpdate/{{item}}"
   }
 }

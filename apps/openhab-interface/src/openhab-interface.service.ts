@@ -65,10 +65,9 @@ export class OpenhabInterfaceService {
     private readonly _config: ConfigService,
   ) {
     this._log.setContext(OpenhabInterfaceService.name)
-    this._mqttDriver.setTopicUpdateCallback(console.log)
-    this._topicFilter = new RegExp(this._config.get<string>('openhab.generalTopicFilter', ''))
-    const eventUrl = this._config.get<string>('openhab.eventsUrl', '')
-    const mappersConfig = this._config.get<ItemMapperConfig[]>('openhab.itemsMappers', [])
+    this._topicFilter = new RegExp(this._config.get<string>('openhab.fromOpenhab.generalTopicFilter', ''))
+    const eventUrl = this._config.get<string>('openhab.fromOpenhab.openhabEventsUrl', 'unknown url')
+    const mappersConfig = this._config.get<ItemMapperConfig[]>('openhab.fromOpenhab.itemsMappers', [])
     this._itemMappers = mappersConfig.map(c => ({
       topicFilter: new RegExp(c.topicFilter),
       typeFilter: new RegExp(c.typeFilter),
@@ -78,10 +77,17 @@ export class OpenhabInterfaceService {
     this._oldStates = {}
 
     // Setting up de SSE link to Openhab
+    if (!eventUrl.startsWith('http')) this._log.warn(`Suspect event URL '${eventUrl}'`)
     const es = new EventSource(eventUrl)
     es.onmessage = (evt: MessageEvent<any>) => this.sseEventHandler(evt)
+    es.onerror = error => this._log.error(JSON.stringify(error))
 
-    this._mqttDriver.setTopicUpdateCallback((tUpd: ItemUpdate) => this.mqttCallback(tUpd))
+    this._mqttDriver.subscribe(
+      (tUpd: ItemUpdate) => this.mqttCallback(tUpd),
+      [
+        /*'oha/#'*/
+      ],
+    )
   }
 
   // Openhab SSE link event handler
@@ -99,8 +105,7 @@ export class OpenhabInterfaceService {
       if (regexTest(openhabTopic, im.topicFilter) && regexTest(payload.type, im.typeFilter)) {
         const update = im.transformer(openhabTopic, payload, now, this._oldStates, im.customConfig)
         const topicToUpdate = update.item
-        console.log(update)
-        this._mqttDriver.send(update)
+        this._mqttDriver.updateItem(update)
         this._oldStates[topicToUpdate] = update
         return true
       }
