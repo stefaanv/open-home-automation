@@ -1,5 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
-import { PhosconInterfaceService } from './phoscon-interface.service';
+import { Controller, Get } from '@nestjs/common'
+import { PhosconInterfaceService } from './phoscon-interface.service'
 
 @Controller()
 export class PhosconInterfaceController {
@@ -7,6 +7,6 @@ export class PhosconInterfaceController {
 
   @Get()
   getHello(): string {
-    return this.phosconInterfaceService.getHello();
+    return ''
   }
 }

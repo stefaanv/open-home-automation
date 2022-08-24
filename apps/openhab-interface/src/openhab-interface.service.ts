@@ -21,8 +21,8 @@ type OpenHabPayload = {
 }
 
 type Transformer<T> = (
-  topic: string,
-  ohPayload: OpenHabPayload,
+  sensorname: string,
+  payload: OpenHabPayload,
   now: Date,
   oldStates: Record<string, SensorReading<any>>,
   customConfig: any,
@@ -85,7 +85,6 @@ export class OpenhabInterfaceService {
     this._oldStates = {}
 
     // Setting up de SSE link to Openhab
-    if (!eventUrl.startsWith('http')) this._log.warn(`Suspect event URL '${eventUrl}'`)
     const es = new EventSource(eventUrl)
     es.onmessage = (evt: MessageEvent<any>) => this.sseEventHandler(evt)
     es.onerror = error => this._log.error(JSON.stringify(error))

@@ -5,24 +5,66 @@ import { SwitchState } from '@core/measurement-types/switch-state'
 import { Temperature } from '@core/measurement-types/temperature'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import EventSource from 'eventsource'
+import WebSocket from 'ws'
 
 type PhosconEvent = {
-  topic: string
-  payload: string
-  type: string
+  e: string
+  id: string
+  r: string
+  t: string
+  attr: PhosconAttr | undefined
+  state: PhosconState | undefined
 }
 
-type PhosconPayload = {
+type PhosconAttr = {
+  id: string
+  lastannounced: string | null // Date
+  lastseen: string | null //Date
+  manufacturername: string
+  modelid: string
+  name: string
+  swversion: string
   type: string
-  value: string
-  oldType: string
-  oldValue: string
+  uniqueid: string
 }
+
+type PhosconState = ZhaPresenceState | ZhaLightLevelState | ZhaTemperatureState
+type PhosconStateTypeName = 'ZHAPresence' | 'ZHALightLevel' | 'ZHATemperature' | 'ZHAHumidity'
+
+type BaseState = {
+  lastupdated: string //date
+}
+
+type ZhaPresenceState =
+  | {
+      presence: boolean
+    }
+  | BaseState
+
+type ZhaLightLevelState =
+  | {
+      dark: boolean
+      daylight: boolean
+      lightlevel: number
+      lux: number
+    }
+  | BaseState
+
+type ZhaTemperatureState =
+  | {
+      temperature: number
+    }
+  | BaseState
+
+type ZhaHumidityState =
+  | {
+      humidity: number
+    }
+  | BaseState
 
 type Transformer<T> = (
-  topic: string,
-  ohPayload: PhosconPayload,
+  sensorName: string,
+  state: PhosconState,
   now: Date,
   oldStates: Record<string, SensorReading<any>>,
   customConfig: any,
@@ -75,7 +117,7 @@ export class PhosconInterfaceService {
     const eventUrl = this._config.get<string>(EVENT_URL, '')
     if (!eventUrl) this._log.warn(EVENT_URL + EMPTY_ERROR_MSG)
     const ws = new WebSocket(eventUrl)
-    ws.onmessage = console.log
+    ws.onmessage = (event: WebSocket.MessageEvent) => this.wsEventHandler(event)
 
     /*
     this._topicFilter = new RegExp(this._config.get<string>('phoscon.fromInterface.generalTopicFilter', ''))
@@ -102,13 +144,15 @@ export class PhosconInterfaceService {
   }
 
   // Phoscon SSE link event handler
-  private sseEventHandler(evt: MessageEvent<any>) {
+  private wsEventHandler(event: WebSocket.MessageEvent) {
     if (!this._processingStarted) {
       this._log.log(`processing of Phoscon events started`)
       this._processingStarted = true
     }
     const now = new Date()
-    const evtData: PhosconEvent = JSON.parse(evt.data)
+    const evtData: PhosconEvent = JSON.parse(event.data.toString())
+    console.log(evtData)
+    /*)
     if (!regexTest(evtData.topic, this._topicFilter)) return // doesn't even pass the Phoscon general topic filter
     const payload: PhosconPayload = JSON.parse(evtData.payload)
     const openhabTopic = regexExtract(evtData.topic, this._topicFilter, 'topic')
@@ -122,6 +166,7 @@ export class PhosconInterfaceService {
       }
       return false
     })
+    */
   }
 
   private mqttCallback(t: SensorReading) {

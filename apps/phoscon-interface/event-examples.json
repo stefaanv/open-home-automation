@@ -1,0 +1,260 @@
+[
+  {
+    "e": "changed",
+    "id": "37",
+    "r": "sensors",
+    "state": {
+      "dark": false,
+      "daylight": true,
+      "lastupdated": "2022-08-24T08:38:06.726",
+      "lightlevel": 20719,
+      "lux": 118
+    },
+    "t": "event",
+    "uniqueid": "04:cf:8c:df:3c:78:6f:5b-01-0400"
+  },
+  {
+    "attr": {
+      "id": "24",
+      "lastannounced": null,
+      "lastseen": "2022-08-24T08:38Z",
+      "manufacturername": "LUMI",
+      "modelid": "lumi.sensor_motion.aq2",
+      "name": "Living-eethoek",
+      "swversion": "3000-0001",
+      "type": "ZHAPresence",
+      "uniqueid": "00:15:8d:00:01:e4:a9:70-01-0406"
+    },
+    "e": "changed",
+    "id": "24",
+    "r": "sensors",
+    "t": "event",
+    "uniqueid": "00:15:8d:00:01:e4:a9:70-01-0406"
+  },
+  {
+    "attr": {
+      "id": "23",
+      "lastannounced": null,
+      "lastseen": "2022-08-24T08:38Z",
+      "manufacturername": "LUMI",
+      "modelid": "lumi.sensor_motion.aq2",
+      "name": "Living-eethoek",
+      "swversion": "3000-0001",
+      "type": "ZHALightLevel",
+      "uniqueid": "00:15:8d:00:01:e4:a9:70-01-0400"
+    },
+    "e": "changed",
+    "id": "23",
+    "r": "sensors",
+    "t": "event",
+    "uniqueid": "00:15:8d:00:01:e4:a9:70-01-0400"
+  },
+  {
+    "e": "changed",
+    "id": "23",
+    "r": "sensors",
+    "state": {
+      "dark": false,
+      "daylight": false,
+      "lastupdated": "2022-08-24T08:38:15.633",
+      "lightlevel": 17783,
+      "lux": 60
+    },
+    "t": "event",
+    "uniqueid": "00:15:8d:00:01:e4:a9:70-01-0400"
+  },
+  {
+    "e": "changed",
+    "id": "24",
+    "r": "sensors",
+    "state": {
+      "lastupdated": "2022-08-24T08:38:15.680",
+      "presence": true
+    },
+    "t": "event",
+    "uniqueid": "00:15:8d:00:01:e4:a9:70-01-0406"
+  },
+  {
+    "attr": {
+      "id": "17",
+      "lastannounced": "2022-08-15T13:08:02Z",
+      "lastseen": "2022-08-24T08:38Z",
+      "manufacturername": "eWeLink",
+      "modelid": "TH01",
+      "name": "skpk4-sonoff",
+      "swversion": "20201026",
+      "type": "ZHATemperature",
+      "uniqueid": "00:12:4b:00:22:6b:08:b3-01-0402"
+    },
+    "e": "changed",
+    "id": "17",
+    "r": "sensors",
+    "t": "event",
+    "uniqueid": "00:12:4b:00:22:6b:08:b3-01-0402"
+  },
+  {
+    "e": "changed",
+    "id": "17",
+    "r": "sensors",
+    "state": {
+      "lastupdated": "2022-08-24T08:38:23.964",
+      "temperature": 2450
+    },
+    "t": "event",
+    "uniqueid": "00:12:4b:00:22:6b:08:b3-01-0402"
+  },
+  {
+    "attr": {
+      "id": "18",
+      "lastannounced": "2022-08-15T13:08:02Z",
+      "lastseen": "2022-08-24T08:38Z",
+      "manufacturername": "eWeLink",
+      "modelid": "TH01",
+      "name": "skpk4-sonoff",
+      "swversion": "20201026",
+      "type": "ZHAHumidity",
+      "uniqueid": "00:12:4b:00:22:6b:08:b3-01-0405"
+    },
+    "e": "changed",
+    "id": "18",
+    "r": "sensors",
+    "t": "event",
+    "uniqueid": "00:12:4b:00:22:6b:08:b3-01-0405"
+  },
+  {
+    "e": "changed",
+    "id": "31",
+    "r": "sensors",
+    "state": {
+      "lastupdated": "2022-08-24T08:38:32.913",
+      "temperature": 2513
+    },
+    "t": "event",
+    "uniqueid": "54:ef:44:10:00:3e:89:a0-01-0402"
+  },
+  {
+    "e": "changed",
+    "id": "37",
+    "r": "sensors",
+    "state": {
+      "dark": false,
+      "daylight": true,
+      "lastupdated": "2022-08-24T08:38:46.597",
+      "lightlevel": 22811,
+      "lux": 191
+    },
+    "t": "event",
+    "uniqueid": "04:cf:8c:df:3c:78:6f:5b-01-0400"
+  },
+  {
+    "attr": {
+      "id": "3",
+      "lastannounced": null,
+      "lastseen": "2022-08-24T08:39Z",
+      "manufacturername": "dresden elektronik",
+      "modelid": "ConBee II",
+      "name": "Configuration tool 3",
+      "swversion": "0x26660700",
+      "type": "Configuration tool",
+      "uniqueid": "00:21:2e:ff:ff:06:98:39-01"
+    },
+    "e": "changed",
+    "id": "3",
+    "r": "lights",
+    "t": "event",
+    "uniqueid": "00:21:2e:ff:ff:06:98:39-01"
+  },
+  {
+    "attr": {
+      "id": "6",
+      "lastannounced": null,
+      "lastseen": "2022-08-24T08:39Z",
+      "manufacturername": "innr",
+      "modelid": "SP 220",
+      "name": "On/Off plug-in unit 6",
+      "swversion": "2.03.10",
+      "type": "On/Off plug-in unit",
+      "uniqueid": "c4:98:86:00:00:0f:8e:9b-01"
+    },
+    "e": "changed",
+    "id": "6",
+    "r": "lights",
+    "t": "event",
+    "uniqueid": "c4:98:86:00:00:0f:8e:9b-01"
+  },
+  {
+    "attr": {
+      "id": "27",
+      "lastannounced": "2022-08-23T08:10:26Z",
+      "lastseen": "2022-08-24T08:39Z",
+      "manufacturername": "LUMI",
+      "modelid": "lumi.sen_ill.mgl01",
+      "name": "buiten-zuid",
+      "swversion": "2019",
+      "type": "ZHALightLevel",
+      "uniqueid": "04:cf:8c:df:3c:7f:09:e8-01-0400"
+    },
+    "e": "changed",
+    "id": "27",
+    "r": "sensors",
+    "t": "event",
+    "uniqueid": "04:cf:8c:df:3c:7f:09:e8-01-0400"
+  },
+  {
+    "e": "changed",
+    "id": "27",
+    "r": "sensors",
+    "state": {
+      "dark": false,
+      "daylight": true,
+      "lastupdated": "2022-08-24T08:39:38.844",
+      "lightlevel": 43521,
+      "lux": 22491
+    },
+    "t": "event",
+    "uniqueid": "04:cf:8c:df:3c:7f:09:e8-01-0400"
+  },
+  {
+    "e": "changed",
+    "id": "24",
+    "r": "sensors",
+    "state": {
+      "lastupdated": "2022-08-24T08:39:45.972",
+      "presence": false
+    },
+    "t": "event",
+    "uniqueid": "00:15:8d:00:01:e4:a9:70-01-0406"
+  },
+  {
+    "attr": {
+      "id": "37",
+      "lastannounced": null,
+      "lastseen": "2022-08-24T08:39Z",
+      "manufacturername": "LUMI",
+      "modelid": "lumi.sen_ill.mgl01",
+      "name": "badkamer",
+      "swversion": null,
+      "type": "ZHALightLevel",
+      "uniqueid": "04:cf:8c:df:3c:78:6f:5b-01-0400"
+    },
+    "e": "changed",
+    "id": "37",
+    "r": "sensors",
+    "t": "event",
+    "uniqueid": "04:cf:8c:df:3c:78:6f:5b-01-0400"
+  },
+  {
+    "e": "changed",
+    "id": "37",
+    "r": "sensors",
+    "state": {
+      "dark": false,
+      "daylight": true,
+      "lastupdated": "2022-08-24T08:39:46.388",
+      "lightlevel": 20682,
+      "lux": 117
+    },
+    "t": "event",
+    "uniqueid": "04:cf:8c:df:3c:78:6f:5b-01-0400"
+  }
+]
