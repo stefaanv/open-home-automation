@@ -1,6 +1,7 @@
 {
+  "apiKey": "7A5A3D4C96",
   "fromInterface": {
-    "eventsUrl": "http://192.168.0.10:8080/rest/events",
+    "eventUrl": "ws://192.168.0.10:443",
     "generalTopicFilter": "openhab\\/items\\/(?<topic>[\\w:]+)\\/statechanged",
     "measurementMappers": [
       {

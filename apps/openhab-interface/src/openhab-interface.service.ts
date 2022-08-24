@@ -52,6 +52,11 @@ function regexExtract(s: string, r: RegExp, groupName: string): string | undefin
   return groups[groupName]
 }
 
+const GENERAL_TOPIC_KEY = 'openhab.fromInterface.generalTopicFilter'
+const EVENT_URL_KEY = 'openhab.fromInterface.eventUrl'
+const MEASUREMENT_MAPPER_KEY = 'openhab.fromInterface.measurementMappers'
+const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
+
 @Injectable()
 export class OpenhabInterfaceService {
   private readonly _topicFilter: RegExp
@@ -65,10 +70,13 @@ export class OpenhabInterfaceService {
     private readonly _config: ConfigService,
   ) {
     this._log.setContext(OpenhabInterfaceService.name)
-    this._topicFilter = new RegExp(this._config.get<string>('openhab.fromOpenhab.generalTopicFilter', ''))
-    const eventUrl = this._config.get<string>('openhab.fromOpenhab.openhabEventsUrl', 'unknown url')
-    const mappersConfig = this._config.get<ItemMapperConfig[]>('openhab.fromOpenhab.itemsMappers', [])
-    this._itemMappers = mappersConfig.map(c => ({
+    this._topicFilter = new RegExp(this._config.get<string>(GENERAL_TOPIC_KEY, ''))
+    if (!this._topicFilter) this._log.warn(GENERAL_TOPIC_KEY + EMPTY_ERROR_MSG)
+    const eventUrl = this._config.get<string>(EVENT_URL_KEY, '')
+    if (eventUrl) this._log.warn(EVENT_URL_KEY + EMPTY_ERROR_MSG)
+    const mappersConfig = this._config.get<MeasurementMapperConfig[]>(MEASUREMENT_MAPPER_KEY, [])
+    if (mappersConfig) this._log.warn(MEASUREMENT_MAPPER_KEY + EMPTY_ERROR_MSG)
+    this._measurementMappers = mappersConfig.map(c => ({
       topicFilter: new RegExp(c.topicFilter),
       typeFilter: new RegExp(c.typeFilter),
       transformer: { temperature: TemperatureTransformer, switch: SwitchTransformer }[c.transformer],
@@ -118,12 +126,6 @@ export class OpenhabInterfaceService {
   }
 }
 
-/*
-vlg_bureau
-{ type: 'OnOff', value: 'ON', oldType: 'OnOff', oldValue: 'OFF' }
-vlg_bureau
-{ type: 'OnOff', value: 'OFF', oldType: 'OnOff', oldValue: 'ON' }
-*/
 const SwitchTransformer: Transformer<SwitchState> = (
   topic: string,
   ohPayload: OpenHabPayload,
@@ -148,25 +150,6 @@ const SwitchTransformer: Transformer<SwitchState> = (
     previousMeasurement: previousState,
   }
 }
-
-/*
-bureau_temp
-{
-  type: 'Quantity',
-  value: '30.900000000000002 °C',
-  oldType: 'Quantity',
-  oldValue: '23.3 °C'
-}
-bureau_vocht
-{ type: 'Quantity', value: '93', oldType: 'Quantity', oldValue: '25' }
-garage_temp
-{
-  type: 'Quantity',
-  value: '22.1 °C',
-  oldType: 'Quantity',
-  oldValue: '22.200000000000003 °C'
-}
-*/
 
 const TemperatureTransformer: Transformer<Temperature> = (
   topic: string,
