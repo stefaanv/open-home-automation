@@ -1,7 +1,7 @@
 import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
 import { SensorReading, PreviousMeasurement } from '@core/sensor-reading.type'
-import { SwitchState } from '@core/measurement-types/switch-state'
+import { SwitchPressed } from '@core/measurement-types/switch'
 import { Temperature } from '@core/measurement-types/temperature'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
@@ -14,6 +14,7 @@ type PhosconEvent = {
   t: string
   attr: PhosconAttr | undefined
   state: PhosconState | undefined
+  uniqueid: string
 }
 
 type PhosconAttr = {
@@ -28,20 +29,20 @@ type PhosconAttr = {
   uniqueid: string
 }
 
-type PhosconState = ZhaPresenceState | ZhaLightLevelState | ZhaTemperatureState
+type PhosconState = PresenceState | LightLevelState | TemperatureState
 type PhosconStateTypeName = 'ZHAPresence' | 'ZHALightLevel' | 'ZHATemperature' | 'ZHAHumidity'
 
 type BaseState = {
   lastupdated: string //date
 }
 
-type ZhaPresenceState =
+type PresenceState =
   | {
       presence: boolean
     }
   | BaseState
 
-type ZhaLightLevelState =
+type LightLevelState =
   | {
       dark: boolean
       daylight: boolean
@@ -50,13 +51,13 @@ type ZhaLightLevelState =
     }
   | BaseState
 
-type ZhaTemperatureState =
+type TemperatureState =
   | {
       temperature: number
     }
   | BaseState
 
-type ZhaHumidityState =
+type HumidityState =
   | {
       humidity: number
     }
@@ -70,18 +71,17 @@ type Transformer<T> = (
   customConfig: any,
 ) => SensorReading<T>
 
-export type MeasurementMapper = {
+export type SensorMapper = {
   typeFilter: RegExp
   topicFilter: RegExp
   transformer: Transformer<any>
   customConfig: any
 }
 
-export type MeasurementMapperConfig = {
-  typeFilter: string
-  topicFilter: string
-  transformer: string
-  customConfig: any
+export type SensorMapperConfig = {
+  uid: string
+  type: string | undefined
+  name: string
 }
 
 function regexTest(s: string, r: RegExp) {
@@ -96,13 +96,17 @@ function regexExtract(s: string, r: RegExp, groupName: string): string | undefin
 
 const APIKEY_KEY = 'phoscon.apikey'
 const EVENT_URL = 'phoscon.fromInterface.eventUrl'
+const SENSOR_MAPPER_KEY = 'phoscon.fromInterface.sensorMappers'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
+  private readonly sensors: Record<string, PhosconAttr> = {}
+  private readonly _sensorConfig: SensorMapperConfig[]
+
   private readonly _topicFilter: RegExp
-  private readonly _measurementMappers: MeasurementMapper[]
+  private readonly _sensorMappers: SensorMapper[]
   private readonly _oldStates: Record<string, SensorReading<any>>
   private _processingStarted = false
 
@@ -116,13 +120,15 @@ export class PhosconInterfaceService {
     if (!this._apiKey) this._log.warn(APIKEY_KEY + EMPTY_ERROR_MSG)
     const eventUrl = this._config.get<string>(EVENT_URL, '')
     if (!eventUrl) this._log.warn(EVENT_URL + EMPTY_ERROR_MSG)
+    this._sensorConfig = this._config.get<SensorMapperConfig[]>(SENSOR_MAPPER_KEY, [])
+    if (!this._sensorConfig) this._log.warn(SENSOR_MAPPER_KEY + EMPTY_ERROR_MSG)
     const ws = new WebSocket(eventUrl)
     ws.onmessage = (event: WebSocket.MessageEvent) => this.wsEventHandler(event)
 
     /*
     this._topicFilter = new RegExp(this._config.get<string>('phoscon.fromInterface.generalTopicFilter', ''))
-    const mappersConfig = this._config.get<MeasurementMapperConfig[]>('phoscon.fromInterface.measurementMappers', [])
-    this._measurementMappers = mappersConfig.map(c => ({
+    const mappersConfig = this._config.get<MeasurementMapperConfig[]>('phoscon.fromInterface.sensorMappers', [])
+    this._sensorMappers = mappersConfig.map(c => ({
       topicFilter: new RegExp(c.topicFilter),
       typeFilter: new RegExp(c.typeFilter),
       transformer: { temperature: TemperatureTransformer, switch: SwitchTransformer }[c.transformer],
@@ -150,13 +156,37 @@ export class PhosconInterfaceService {
       this._processingStarted = true
     }
     const now = new Date()
-    const evtData: PhosconEvent = JSON.parse(event.data.toString())
-    console.log(evtData)
+    const payload: PhosconEvent = JSON.parse(event.data.toString())
+    if (payload.attr) {
+      const uniqueId = payload.uniqueid
+      if (!this.sensors[uniqueId]) {
+        const config = this._sensorConfig.find(c => c.uid === uniqueId)
+        if (config) {
+          const sensorName = config?.name ?? 'not defined'
+          this.sensors[uniqueId] = { ...payload.attr, ...config }
+          const msg =
+            `Sensor ${payload.attr.name} configured => ${config.name} discovered (uid=${uniqueId})` +
+            `, type = ${config.type ?? 'to suppress'}`
+          this._log.log(msg)
+        } else {
+          this._log.warn(`Undefined sensor ${payload.attr.name} (uid=${uniqueId}), type=${payload.attr.type}`)
+        }
+      }
+    } else {
+      // state change event
+      const state = payload.state
+      const mapper = this.sensors[payload.uniqueid]
+      if (mapper) {
+        this._log.debug(`${mapper.name} (${mapper.type}), value=${JSON.stringify(state)}`)
+      } else {
+        this._log.warn(`Undefined sensor VALUE (uid=${payload.uniqueid}), value=${JSON.stringify(state)}`)
+      }
+    }
     /*)
     if (!regexTest(evtData.topic, this._topicFilter)) return // doesn't even pass the Phoscon general topic filter
     const payload: PhosconPayload = JSON.parse(evtData.payload)
     const openhabTopic = regexExtract(evtData.topic, this._topicFilter, 'topic')
-    this._measurementMappers.some(im => {
+    this._sensorMappers.some(im => {
       if (regexTest(openhabTopic, im.topicFilter) && regexTest(payload.type, im.typeFilter)) {
         const update = im.transformer(openhabTopic, payload, now, this._oldStates, im.customConfig)
         const topicToUpdate = update.name
@@ -174,14 +204,15 @@ export class PhosconInterfaceService {
   }
 }
 
+/*
 const SwitchTransformer: Transformer<SwitchState> = (
   topic: string,
-  ohPayload: PhosconPayload,
+  state: PresenceState,
   now: Date,
   oldStates: Record<string, SensorReading<any>>,
   customConfig: any,
 ): SensorReading<SwitchState> => {
-  const valueLc = ohPayload.value.toLocaleLowerCase()
+  const valueLc = state.value.toLocaleLowerCase()
   const value = (['on', 'off'].includes(valueLc) ? valueLc : undefined) as SwitchState
 
   const lastUpdate = oldStates[topic]
@@ -232,3 +263,4 @@ const TemperatureTransformer: Transformer<Temperature> = (
     previousMeasurement: previousState,
   }
 }
+  */

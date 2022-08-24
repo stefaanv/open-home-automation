@@ -1,11 +1,12 @@
 import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
 import { SensorReading, PreviousMeasurement } from '@core/sensor-reading.type'
-import { SwitchState } from '@core/measurement-types/switch-state'
 import { Temperature } from '@core/measurement-types/temperature'
+import { Humidity } from '@core/measurement-types/humidity'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import EventSource from 'eventsource'
+import { OnOff } from '@core/measurement-types/on-off'
 
 type OpenHabEvent = {
   topic: string
@@ -20,26 +21,19 @@ type OpenHabPayload = {
   oldValue: string
 }
 
-type Transformer<T> = (
-  sensorname: string,
-  payload: OpenHabPayload,
-  now: Date,
-  oldStates: Record<string, SensorReading<any>>,
-  customConfig: any,
-) => SensorReading<T>
+//(payload, lastUpdate, mapper, now)
+type Transformer<T> = (payload: OpenHabPayload, lastUpdate: SensorReading<T>, now: Date) => SensorReading<T>
 
-export type MeasurementMapper = {
+export type SensorMapper = {
   typeFilter: RegExp
   topicFilter: RegExp
   transformer: Transformer<any>
-  customConfig: any
 }
 
-export type MeasurementMapperConfig = {
+export type SensorMapperConfig = {
   typeFilter: string
   topicFilter: string
-  transformer: string
-  customConfig: any
+  measurementType: string
 }
 
 function regexTest(s: string, r: RegExp) {
@@ -54,13 +48,13 @@ function regexExtract(s: string, r: RegExp, groupName: string): string | undefin
 
 const GENERAL_TOPIC_KEY = 'openhab.fromInterface.generalTopicFilter'
 const EVENT_URL_KEY = 'openhab.fromInterface.eventUrl'
-const MEASUREMENT_MAPPER_KEY = 'openhab.fromInterface.measurementMappers'
+const MEASUREMENT_MAPPER_KEY = 'openhab.fromInterface.sensorMappers'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
 @Injectable()
 export class OpenhabInterfaceService {
   private readonly _topicFilter: RegExp
-  private readonly _measurementMappers: MeasurementMapper[]
+  private readonly _sensorMappers: SensorMapper[]
   private readonly _oldStates: Record<string, SensorReading<any>>
   private _processingStarted = false
 
@@ -74,13 +68,17 @@ export class OpenhabInterfaceService {
     if (!this._topicFilter) this._log.warn(GENERAL_TOPIC_KEY + EMPTY_ERROR_MSG)
     const eventUrl = this._config.get<string>(EVENT_URL_KEY, '')
     if (eventUrl) this._log.warn(EVENT_URL_KEY + EMPTY_ERROR_MSG)
-    const mappersConfig = this._config.get<MeasurementMapperConfig[]>(MEASUREMENT_MAPPER_KEY, [])
+    const mappersConfig = this._config.get<SensorMapperConfig[]>(MEASUREMENT_MAPPER_KEY, [])
     if (mappersConfig) this._log.warn(MEASUREMENT_MAPPER_KEY + EMPTY_ERROR_MSG)
-    this._measurementMappers = mappersConfig.map(c => ({
+    const transformerMapping = {
+      temperature: TemperatureTransformer,
+      humidity: HumidityTransformer,
+      'on-off': OnOffTransformer,
+    }
+    this._sensorMappers = mappersConfig.map(c => ({
       topicFilter: new RegExp(c.topicFilter),
       typeFilter: new RegExp(c.typeFilter),
-      transformer: { temperature: TemperatureTransformer, switch: SwitchTransformer }[c.transformer],
-      customConfig: c.customConfig,
+      transformer: transformerMapping[c.measurementType],
     }))
     this._oldStates = {}
 
@@ -108,16 +106,17 @@ export class OpenhabInterfaceService {
     if (!regexTest(evtData.topic, this._topicFilter)) return // doesn't even pass the openHAB general topic filter
     const payload: OpenHabPayload = JSON.parse(evtData.payload)
     const openhabTopic = regexExtract(evtData.topic, this._topicFilter, 'topic')
-    this._measurementMappers.some(im => {
-      if (regexTest(openhabTopic, im.topicFilter) && regexTest(payload.type, im.typeFilter)) {
-        const update = im.transformer(openhabTopic, payload, now, this._oldStates, im.customConfig)
-        const topicToUpdate = update.name
-        this._mqttDriver.sendMeasurement(update)
-        this._oldStates[topicToUpdate] = update
-        return true
-      }
-      return false
-    })
+    const openhabType = payload.type
+    const mapper = this._sensorMappers.find(
+      sm => regexTest(openhabTopic, sm.topicFilter) && regexTest(payload.type, sm.typeFilter),
+    )
+    if (mapper) {
+      const lastUpdate = this._oldStates[openhabTopic]
+      const update = mapper.transformer(payload, lastUpdate, now)
+      update.name = openhabTopic
+      this._mqttDriver.sendMeasurement(update)
+      this._oldStates[openhabTopic] = update
+    }
   }
 
   private mqttCallback(t: SensorReading) {
@@ -125,61 +124,65 @@ export class OpenhabInterfaceService {
   }
 }
 
-const SwitchTransformer: Transformer<SwitchState> = (
-  topic: string,
+//TODO transformers nog vereenvoudigen, eigenlijk is enkel de berekening van `measurement` verschillend !!
+const OnOffTransformer: Transformer<OnOff> = (
   ohPayload: OpenHabPayload,
+  lastUpdate: SensorReading<OnOff>,
   now: Date,
-  oldStates: Record<string, SensorReading<any>>,
-  customConfig: any,
-): SensorReading<SwitchState> => {
+): SensorReading<OnOff> => {
   const valueLc = ohPayload.value.toLocaleLowerCase()
-  const value = (['on', 'off'].includes(valueLc) ? valueLc : undefined) as SwitchState
+  const measurement: OnOff = { on: ['on', 'off'].includes(valueLc) ? valueLc === 'on' : undefined }
 
-  const lastUpdate = oldStates[topic]
-  const previousState: PreviousMeasurement<SwitchState> = {
+  const previousState: PreviousMeasurement<OnOff> = {
     time: lastUpdate ? lastUpdate.time : now,
     measurement: lastUpdate ? lastUpdate.measurement : undefined,
   }
 
   return {
     time: now,
-    type: 'switch',
-    name: topic,
-    measurement: value,
+    type: 'on-off',
+    name: '',
+    measurement,
     previousMeasurement: previousState,
   }
 }
 
-const TemperatureTransformer: Transformer<Temperature> = (
-  topic: string,
+const HumidityTransformer: Transformer<Humidity> = (
   ohPayload: OpenHabPayload,
+  lastUpdate: SensorReading<Humidity>,
   now: Date,
-  oldStates: Record<string, SensorReading<any>>,
-  customConfig: any,
-): SensorReading<Temperature> => {
-  let topicToUpdate = topic.includes(customConfig.humidityTopicFilter ?? '____')
-    ? topic.replace(customConfig['humidityTopicFilter'], customConfig['replaceBy'])
-    : topic
-
-  const value = parseFloat(ohPayload.value)
-  let lastUpdate = oldStates[topicToUpdate]
-  const previousState: PreviousMeasurement<Temperature> = {
+): SensorReading<Humidity> => {
+  const measurement: Humidity = { humidity: parseFloat(ohPayload.value) }
+  const previousMeasurement: PreviousMeasurement<Humidity> = {
     time: lastUpdate ? lastUpdate.time : now,
-    measurement: lastUpdate ? lastUpdate.measurement : { temperature: undefined, humidity: undefined },
+    measurement: lastUpdate ? lastUpdate.measurement : { humidity: undefined },
   }
-  let newState = { ...previousState.measurement }
 
-  if (topicToUpdate === topic) {
-    newState.temperature = value
-  } else {
-    newState.humidity = value
+  return {
+    time: now,
+    type: 'humidity',
+    name: '',
+    measurement,
+    previousMeasurement,
+  }
+}
+
+const TemperatureTransformer: Transformer<Temperature> = (
+  ohPayload: OpenHabPayload,
+  lastUpdate: SensorReading<Temperature>,
+  now: Date,
+): SensorReading<Temperature> => {
+  const measurement: Temperature = { temperature: parseFloat(ohPayload.value) }
+  const previousMeasurement: PreviousMeasurement<Temperature> = {
+    time: lastUpdate ? lastUpdate.time : now,
+    measurement: lastUpdate ? lastUpdate.measurement : { temperature: undefined },
   }
 
   return {
     time: now,
     type: 'temperature',
-    name: topicToUpdate,
-    measurement: newState,
-    previousMeasurement: previousState,
+    name: '',
+    measurement,
+    previousMeasurement,
   }
 }

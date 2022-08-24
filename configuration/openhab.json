@@ -2,20 +2,21 @@
   "fromInterface": {
     "eventUrl": "http://192.168.0.10:8080/rest/events",
     "generalTopicFilter": "openhab\\/items\\/(?<topic>[\\w:]+)\\/statechanged",
-    "measurementMappers": [
+    "sensorMappers": [
       {
-        "topicFilter": "(?<topic>[\\w:]+(vocht|temp|temp_rfx))",
+        "topicFilter": "(?<topic>[\\w:]+(temp|temp_rfx))",
         "typeFilter": "Quantity",
-        "transformer": "temperature",
-        "customConfig": {
-          "humidityTopicFilter": "vocht",
-          "replaceBy": "temp"
-        }
+        "measurementType": "temperature"
+      },
+      {
+        "topicFilter": "(?<topic>[\\w:]+vocht)",
+        "typeFilter": "Quantity",
+        "measurementType": "humidity"
       },
       {
         "topicFilter": "vlg_(?<topic>[\\w:]+)",
         "typeFilter": "OnOff",
-        "transformer": "switch"
+        "measurementType": "on-off"
       }
     ]
   },
