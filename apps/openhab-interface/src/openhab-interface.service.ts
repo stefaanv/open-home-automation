@@ -65,10 +65,10 @@ export class OpenhabInterfaceService {
     private readonly _config: ConfigService,
   ) {
     this._log.setContext(OpenhabInterfaceService.name)
-    this._topicFilter = new RegExp(this._config.get<string>('openhab.fromInterface.generalTopicFilter', ''))
-    const eventUrl = this._config.get<string>('openhab.fromInterface.eventsUrl', 'unknown url')
-    const mappersConfig = this._config.get<MeasurementMapperConfig[]>('openhab.fromInterface.measurementMappers', [])
-    this._measurementMappers = mappersConfig.map(c => ({
+    this._topicFilter = new RegExp(this._config.get<string>('openhab.fromOpenhab.generalTopicFilter', ''))
+    const eventUrl = this._config.get<string>('openhab.fromOpenhab.openhabEventsUrl', 'unknown url')
+    const mappersConfig = this._config.get<ItemMapperConfig[]>('openhab.fromOpenhab.itemsMappers', [])
+    this._itemMappers = mappersConfig.map(c => ({
       topicFilter: new RegExp(c.topicFilter),
       typeFilter: new RegExp(c.typeFilter),
       transformer: { temperature: TemperatureTransformer, switch: SwitchTransformer }[c.transformer],
