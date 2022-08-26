@@ -1,14 +1,11 @@
 export type MeasurementType = 'temperature' | 'humidity' | 'switch' | 'on-off' | 'luminance'
 
 export type SensorReading<T = any> = {
+  origin: string
   time: Date
   type: MeasurementType
   name: string
-  measurement: T
-  previousMeasurement: undefined | PreviousMeasurement<T>
-}
-
-export interface PreviousMeasurement<T = any> {
-  time: Date
-  measurement: T
+  value: T
+  unit: string
+  formattedValue: string
 }

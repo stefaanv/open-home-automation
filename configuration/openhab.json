@@ -1,7 +1,9 @@
 {
   "fromInterface": {
-    "eventUrl": "http://192.168.0.10:8080/rest/events",
-    "generalTopicFilter": "openhab\\/items\\/(?<topic>[\\w:]+)\\/statechanged",
+    "interfaceSpecific": {
+      "eventUrl": "http://192.168.0.10:8080/rest/events",
+      "generalTopicFilter": "openhab\\/items\\/(?<topic>[\\w:]+)\\/statechanged"
+    },
     "sensorMappers": [
       {
         "topicFilter": "(?<topic>[\\w:]+(temp|temp_rfx))",

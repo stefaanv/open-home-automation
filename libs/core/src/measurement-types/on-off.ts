@@ -1,3 +1,1 @@
-export interface OnOff {
-  on: boolean
-}
+export type OnOff = 'on' | 'off' | undefined

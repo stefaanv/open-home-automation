@@ -1,89 +1,92 @@
 {
-  "apiKey": "7A5A3D4C96",
+  "interfaceSpecific": {
+    "apiKey": "7A5A3D4C96"
+  },
   "fromInterface": {
-    "eventUrl": "ws://192.168.0.10:443",
-    "generalTopicFilter": "openhab\\/items\\/(?<topic>[\\w:]+)\\/statechanged",
+    "interfaceSpecific": {
+      "eventUrl": "ws://192.168.0.10:443"
+    },
     "sensorMappers": [
       {
         "uid": "5c:02:72:ff:fe:c7:34:ee-01-0402",
-        "type": "temperature",
-        "name": "temp-buiten-lucht"
+        "measurementType": "temperature",
+        "name": "buiten-lucht-temp"
       },
       {
         "uid": "04:cf:8c:df:3c:78:6f:5b-01-0400",
-        "type": "luminance",
-        "name": "lumi-badkamer"
+        "measurementType": "luminance",
+        "name": "badkamer-lumi"
       },
       {
         "uid": "00:12:4b:00:22:6b:08:b3-01-0402",
-        "type": "temperature",
-        "name": "temp-buiten-lucht"
+        "measurementType": "temperature",
+        "name": "buiten-lucht-temp"
       },
       {
         "uid": "00:12:4b:00:22:6b:08:b3-01-0402",
-        "type": "temperature",
-        "name": "temp-slpk4-sonoff"
+        "measurementType": "temperature",
+        "name": "slpk4-sonoff-temp"
       },
       {
         "uid": "00:12:4b:00:22:6b:08:b3-01-0405",
-        "type": "humidity",
-        "name": "vocht-slpk4-sonoff"
+        "measurementType": "humidity",
+        "name": "vocht-slpk4-sonoff-vocht"
       },
       {
         "uid": "00:15:8d:00:01:e4:a9:70-01-0406",
-        "type": "presence",
-        "name": "pres-living-eethoek-nw"
+        "measurementType": "presence",
+        "name": "living-eethoek-nw-pres"
       },
       {
         "uid": "00:15:8d:00:01:e4:a9:70-01-0400",
-        "type": "luminance",
-        "name": "lumi-living-eethoek-nw"
+        "measurementType": "luminance",
+        "name": "living-eethoek-nw-lumi"
       },
       {
         "uid": "04:cf:8c:df:3c:7f:09:e8-01-0400",
-        "type": "luminance",
-        "name": "lumi-buiten-zuid"
+        "measurementType": "luminance",
+        "name": "buiten-zuid-lumi"
       },
       {
         "uid": "04:cf:8c:df:3c:7f:14:6a-01-0400",
-        "type": "luminance",
-        "name": "lumi-buiten-west"
+        "measurementType": "luminance",
+        "name": "buiten-west-lumi"
       },
       {
         "uid": "00:17:88:01:06:48:9f:5f-02-0406",
-        "type": "presence",
-        "name": "pres-philips-niet-in-gebruik"
+        "measurementType": "presence",
+        "name": "philips-niet-in-gebruik-pres"
       },
       {
         "uid": "00:17:88:01:06:48:9f:5f-02-0400",
-        "type": "luminance",
-        "name": "lumi-philips-niet-in-gebruik"
+        "measurementType": "luminance",
+        "name": "philips-niet-in-gebruik-lumi"
       },
       {
         "uid": "00:17:88:01:06:48:9f:5f-02-0402",
-        "type": "temperature",
-        "name": "temp-philips-niet-in-gebruik"
+        "measurementType": "temperature",
+        "name": "philips-niet-in-gebruik-temp"
       },
       {
         "uid": "54:ef:44:10:00:3e:89:a0-01-0405",
-        "type": "humidity",
-        "name": "vocht-bureau-aqara"
+        "measurementType": "humidity",
+        "name": "bureau-aqara-vocht"
       },
       {
         "uid": "54:ef:44:10:00:3e:89:a0-01-000c",
         "remark": "ZHAAirQuality",
-        "name": "airq-bureau-aqara"
+        "name": "bureau-aqara-airq"
       },
       {
         "uid": "54:ef:44:10:00:3e:89:a0-01-0402",
-        "type": "temperature",
-        "name": "temp-bureau-aqara"
+        "measurementType": "temperature",
+        "name": "bureau-aqara-temp"
       },
       {
         "uid": "00:15:8d:00:05:42:3b:e2-01-0006",
         "remark": "type=ZHAOpenClose",
-        "type": "switch",
-        "name": "window-badkamer-venster"
+        "measurementType": "switch",
+        "name": "badkamer-venster-cnct"
       },
       {
         "uid": "8c:f6:81:ff:fe:e9:0a:1d-01",

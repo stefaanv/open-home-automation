@@ -1,8 +1,6 @@
 import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
-import { SensorReading, PreviousMeasurement } from '@core/sensor-reading.type'
-import { SwitchPressed } from '@core/measurement-types/switch'
-import { Temperature } from '@core/measurement-types/temperature'
+import { SensorReading } from '@core/sensor-reading.type'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import WebSocket from 'ws'
@@ -36,32 +34,24 @@ type BaseState = {
   lastupdated: string //date
 }
 
-type PresenceState =
-  | {
-      presence: boolean
-    }
-  | BaseState
+type PresenceState = {
+  presence: boolean
+} & BaseState
 
-type LightLevelState =
-  | {
-      dark: boolean
-      daylight: boolean
-      lightlevel: number
-      lux: number
-    }
-  | BaseState
+type LightLevelState = {
+  dark: boolean
+  daylight: boolean
+  lightlevel: number
+  lux: number
+} & BaseState
 
-type TemperatureState =
-  | {
-      temperature: number
-    }
-  | BaseState
+type TemperatureState = {
+  temperature: number
+} & BaseState
 
-type HumidityState =
-  | {
-      humidity: number
-    }
-  | BaseState
+type HumidityState = {
+  humidity: number
+} & BaseState
 
 type Transformer<T> = (
   sensorName: string,
@@ -72,15 +62,12 @@ type Transformer<T> = (
 ) => SensorReading<T>
 
 export type SensorMapper = {
-  typeFilter: RegExp
-  topicFilter: RegExp
-  transformer: Transformer<any>
-  customConfig: any
+  measurementType: string | undefined
 }
 
 export type SensorMapperConfig = {
   uid: string
-  type: string | undefined
+  measurementType: string | undefined
   name: string
 }
 
@@ -94,15 +81,15 @@ function regexExtract(s: string, r: RegExp, groupName: string): string | undefin
   return groups[groupName]
 }
 
-const APIKEY_KEY = 'phoscon.apikey'
-const EVENT_URL = 'phoscon.fromInterface.eventUrl'
+const APIKEY_KEY = 'phoscon.interfaceSpecific.apikey'
+const EVENT_URL = 'phoscon.fromInterface.interfaceSpecific.eventUrl'
 const SENSOR_MAPPER_KEY = 'phoscon.fromInterface.sensorMappers'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
-  private readonly sensors: Record<string, PhosconAttr> = {}
+  private readonly _sensors: Record<string, PhosconAttr & SensorMapper> = {}
   private readonly _sensorConfig: SensorMapperConfig[]
 
   private readonly _topicFilter: RegExp
@@ -124,29 +111,6 @@ export class PhosconInterfaceService {
     if (!this._sensorConfig) this._log.warn(SENSOR_MAPPER_KEY + EMPTY_ERROR_MSG)
     const ws = new WebSocket(eventUrl)
     ws.onmessage = (event: WebSocket.MessageEvent) => this.wsEventHandler(event)
-
-    /*
-    this._topicFilter = new RegExp(this._config.get<string>('phoscon.fromInterface.generalTopicFilter', ''))
-    const mappersConfig = this._config.get<MeasurementMapperConfig[]>('phoscon.fromInterface.sensorMappers', [])
-    this._sensorMappers = mappersConfig.map(c => ({
-      topicFilter: new RegExp(c.topicFilter),
-      typeFilter: new RegExp(c.typeFilter),
-      transformer: { temperature: TemperatureTransformer, switch: SwitchTransformer }[c.transformer],
-      customConfig: c.customConfig,
-    }))
-    this._oldStates = {}
-
-    // Setting up de SSE link to Openhab
-    if (!eventUrl.startsWith('http')) this._log.warn(`Suspect event URL '${eventUrl}'`)
-    const es = new EventSource(eventUrl)
-    es.onmessage = (evt: MessageEvent<any>) => this.sseEventHandler(evt)
-    es.onerror = error => this._log.error(JSON.stringify(error))
-
-    this._mqttDriver.subscribe(
-      (tUpd: SensorReading) => this.mqttCallback(tUpd),
-      [      ],
-    )
-    */
   }
 
   // Phoscon SSE link event handler
@@ -159,14 +123,14 @@ export class PhosconInterfaceService {
     const payload: PhosconEvent = JSON.parse(event.data.toString())
     if (payload.attr) {
       const uniqueId = payload.uniqueid
-      if (!this.sensors[uniqueId]) {
+      if (!this._sensors[uniqueId]) {
         const config = this._sensorConfig.find(c => c.uid === uniqueId)
         if (config) {
           const sensorName = config?.name ?? 'not defined'
-          this.sensors[uniqueId] = { ...payload.attr, ...config }
+          this._sensors[uniqueId] = { ...payload.attr, ...config }
           const msg =
             `Sensor ${payload.attr.name} configured => ${config.name} discovered (uid=${uniqueId})` +
-            `, type = ${config.type ?? 'to suppress'}`
+            `, type = ${config.measurementType ?? 'to suppress'}`
           this._log.log(msg)
         } else {
           this._log.warn(`Undefined sensor ${payload.attr.name} (uid=${uniqueId}), type=${payload.attr.type}`)
@@ -174,10 +138,48 @@ export class PhosconInterfaceService {
       }
     } else {
       // state change event
+      //TODO transformer voor presence toevoegen
+      //TODO unit toevoegen aan SensorReading
+      //TODO stringValue toevoegen aan SensorReading
       const state = payload.state
-      const mapper = this.sensors[payload.uniqueid]
+      const mapper = this._sensors[payload.uniqueid]
       if (mapper) {
         this._log.debug(`${mapper.name} (${mapper.type}), value=${JSON.stringify(state)}`)
+        let value: any
+        let unit: string = ''
+        let formattedValue: string
+
+        switch (mapper.measurementType) {
+          case 'temperature':
+            value = (payload.state as TemperatureState).temperature / 100
+            unit = '°C'
+            formattedValue = (value as number).toFixed(1) + ' ' + unit
+            break
+          case 'humidity':
+            value = (payload.state as unknown as HumidityState).humidity / 100
+            unit = '%rh'
+            formattedValue = (value as number).toFixed(0) + ' ' + unit
+            break
+          case 'luminance':
+            value = (payload.state as LightLevelState).lux
+            unit = 'Lux'
+            formattedValue = (value as number).toFixed(0) + ' ' + unit
+            break
+          case 'on-off':
+            value = (payload.state as PresenceState).presence ? 'present' : 'absent'
+            formattedValue = value
+            break
+        }
+        const update = {
+          time: now,
+          type: mapper.measurementType,
+          name: mapper.name,
+          value,
+          formattedValue,
+          unit,
+          origin: 'phoscon',
+        } as SensorReading
+        this._mqttDriver.sendMeasurement(update)
       } else {
         this._log.warn(`Undefined sensor VALUE (uid=${payload.uniqueid}), value=${JSON.stringify(state)}`)
       }

@@ -1,3 +1,1 @@
-export interface OpenClosed {
-  closed: boolean
-}
+export type OpenClosed = 'open' | 'closed' | undefined
