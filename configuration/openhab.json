@@ -7,17 +7,14 @@
     "sensorMappers": [
       {
         "topicFilter": "(?<topic>[\\w:]+(temp|temp_rfx))",
-        "typeFilter": "Quantity",
         "measurementType": "temperature"
       },
       {
         "topicFilter": "(?<topic>[\\w:]+vocht)",
-        "typeFilter": "Quantity",
         "measurementType": "humidity"
       },
       {
         "topicFilter": "vlg_(?<topic>[\\w:]+)",
-        "typeFilter": "OnOff",
         "measurementType": "on-off"
       }
     ]

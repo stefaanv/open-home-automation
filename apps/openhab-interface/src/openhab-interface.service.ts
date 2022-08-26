@@ -23,13 +23,11 @@ type OpenHabPayload = {
 type Transformer<T> = (payload: OpenHabPayload, lastUpdate: SensorReading<T>, now: Date) => SensorReading<T>
 
 export type SensorMapper = {
-  typeFilter: RegExp
   topicFilter: RegExp
   measurementType: string
 }
 
 export type SensorMapperConfig = {
-  typeFilter: string
   topicFilter: string
   measurementType: string
 }
@@ -51,7 +49,7 @@ const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
 @Injectable()
 export class OpenhabInterfaceService {
-  private readonly _generalTopicFilter: RegExp
+  private readonly _topicFilter: RegExp
   private readonly _sensorMappers: SensorMapper[]
   private readonly _oldStates: Record<string, SensorReading<any>>
   private _processingStarted = false
@@ -62,15 +60,14 @@ export class OpenhabInterfaceService {
     private readonly _config: ConfigService,
   ) {
     this._log.setContext(OpenhabInterfaceService.name)
-    this._generalTopicFilter = new RegExp(this._config.get<string>(GENERAL_TOPIC_KEY, ''))
-    if (!this._generalTopicFilter) this._log.warn(GENERAL_TOPIC_KEY + EMPTY_ERROR_MSG)
+    this._topicFilter = new RegExp(this._config.get<string>(GENERAL_TOPIC_KEY, ''))
+    if (!this._topicFilter) this._log.warn(GENERAL_TOPIC_KEY + EMPTY_ERROR_MSG)
     const eventUrl = this._config.get<string>(EVENT_URL_KEY, '')
     if (eventUrl) this._log.warn(EVENT_URL_KEY + EMPTY_ERROR_MSG)
     const mappersConfig = this._config.get<SensorMapperConfig[]>(MEASUREMENT_MAPPER_KEY, [])
     if (mappersConfig) this._log.warn(MEASUREMENT_MAPPER_KEY + EMPTY_ERROR_MSG)
     this._sensorMappers = mappersConfig.map(c => ({
       topicFilter: new RegExp(c.topicFilter),
-      typeFilter: new RegExp(c.typeFilter),
       measurementType: c.measurementType,
     }))
     this._oldStates = {}
@@ -96,12 +93,10 @@ export class OpenhabInterfaceService {
     }
     const now = new Date()
     const evtData: OpenHabEvent = JSON.parse(evt.data)
-    if (!regexTest(evtData.topic, this._generalTopicFilter)) return // doesn't even pass the openHAB general topic filter
+    if (!regexTest(evtData.topic, this._topicFilter)) return // doesn't even pass the openHAB general topic filter
     const payload: OpenHabPayload = JSON.parse(evtData.payload)
-    const openhabTopic = regexExtract(evtData.topic, this._generalTopicFilter, 'topic')
-    const mapper = this._sensorMappers.find(
-      sm => regexTest(openhabTopic, sm.topicFilter) && regexTest(payload.type, sm.typeFilter),
-    )
+    const openhabTopic = regexExtract(evtData.topic, this._topicFilter, 'topic')
+    const mapper = this._sensorMappers.find(sm => regexTest(openhabTopic, sm.topicFilter))
     if (mapper) {
       let value: any
       let unit: string
