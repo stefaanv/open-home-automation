@@ -8,6 +8,28 @@
     },
     "sensorMappers": [
       {
+        "nameFilter": "(?<sensorName>[\\w:]+)_multi",
+        "measurementType": "multi"
+      },
+      {
+        "nameFilter": "(?<sensorName>[\\w:]+)_lumi",
+        "measurementType": "luminance"
+      },
+      {
+        "nameFilter": "(?<sensorName>[\\w:]+)_cnct",
+        "measurementType": "contact"
+      },
+      {
+        "nameFilter": "(?<sensorName>[\\w:]+)_plug",
+        "measurementType": "relay"
+      },
+      {
+        "nameFilter": "(?<sensorName>[\\w:]+)_switch",
+        "measurementType": "switch"
+      }
+    ],
+    "oldSensorMappers": [
+      {
         "uid": "5c:02:72:ff:fe:c7:34:ee-01-0402",
         "measurementType": "temperature",
         "name": "buiten-lucht-temp"

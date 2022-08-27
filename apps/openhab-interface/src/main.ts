@@ -15,6 +15,6 @@ async function bootstrap() {
   // logger.error('error')
   // cs.test(config.get<string>('test'))
   // const oh = app.get(OpenhabInterfaceService)
-  await app.listen(3000)
+  await app.listen(3002)
 }
 bootstrap()

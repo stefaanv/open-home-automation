@@ -1,5 +1,102 @@
 {
   attr: {
+    id: '4',
+    lastannounced: '2022-08-25T10:56:24Z',
+    lastseen: '2022-08-27T15:36Z',
+    manufacturername: 'eWeLink',
+    modelid: 'WB01',
+    name: 'WB01 4',
+    swversion: '20200718',
+    type: 'ZHASwitch',
+    uniqueid: '00:12:4b:00:22:42:41:25-01-0006'
+  },
+  e: 'changed',
+  id: '4',
+  r: 'sensors',
+  t: 'event',
+  uniqueid: '00:12:4b:00:22:42:41:25-01-0006'
+}
+{
+  config: { battery: 100, group: '2', on: true, reachable: true },
+  e: 'changed',
+  id: '4',
+  r: 'sensors',
+  t: 'event',
+  uniqueid: '00:12:4b:00:22:42:41:25-01-0006'
+}
+{
+  e: 'changed',
+  id: '4',
+  r: 'sensors',
+  state: { buttonevent: 1002, lastupdated: '2022-08-27T15:36:03.748' },
+  t: 'event',
+  uniqueid: '00:12:4b:00:22:42:41:25-01-0006'
+}
+{
+  config: { battery: 100, group: '1', on: true, reachable: true },
+  e: 'changed',
+  id: '4',
+  r: 'sensors',
+  t: 'event',
+  uniqueid: '00:12:4b:00:22:42:41:25-01-0006'
+}
+
+{
+  attr: {
+    id: '9',
+    lastannounced: '2022-08-27T13:34:08Z',
+    lastseen: '2022-08-27T13:33Z',
+    manufacturername: 'innr',
+    modelid: 'SP 220',
+    name: 'On/Off plug-in unit 9',
+    swversion: null,
+    type: 'On/Off plug-in unit',
+    uniqueid: 'c4:98:86:00:00:0f:6d:5c-01'
+  },
+  e: 'changed',
+  id: '9',
+  r: 'lights',
+  t: 'event',
+  uniqueid: 'c4:98:86:00:00:0f:6d:5c-01'
+}
+{
+  e: 'changed',
+  id: '9',
+  r: 'lights',
+  state: { alert: null, on: null, reachable: true },
+  t: 'event',
+  uniqueid: 'c4:98:86:00:00:0f:6d:5c-01'
+}
+
+{
+  attr: {
+    id: '7',
+    lastannounced: '2022-08-18T14:00:39Z',
+    lastseen: '2022-08-27T13:26Z',
+    manufacturername: 'innr',
+    modelid: 'SP 220',
+    name: 'kleine_nachthal_plug',
+    swversion: '2.03.10',
+    type: 'On/Off plug-in unit',
+    uniqueid: 'c4:98:86:00:00:0f:6c:b1-01'
+  },
+  e: 'changed',
+  id: '7',
+  r: 'lights',
+  t: 'event',
+  uniqueid: 'c4:98:86:00:00:0f:6c:b1-01'
+}
+{
+  e: 'changed',
+  id: '2',
+  r: 'groups',
+  state: { all_on: false, any_on: false },
+  t: 'event'
+}
+
+
+{
+  attr: {
     id: '5',
     lastannounced: '2022-08-15T12:13:03Z',
     lastseen: '2022-08-24T08:53Z',

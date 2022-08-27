@@ -55,7 +55,7 @@ export class MqttDriver {
   public sendMeasurement(update: SensorReading) {
     if (this._outSensorReadingMqttTopicTemplate) {
       const mqttTopic = this._outSensorReadingMqttTopicTemplate({ sensorName: update.name, prefix: this._topicPrefix })
-      this._log.debug(`sending update to ${mqttTopic}`)
+      // this._log.debug(`sending update to ${mqttTopic}`)
       this._mqttClient.publish(mqttTopic, JSON.stringify(update))
     }
   }

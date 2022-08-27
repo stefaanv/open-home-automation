@@ -1,4 +1,12 @@
-export type MeasurementType = 'temperature' | 'humidity' | 'switch' | 'on-off' | 'luminance'
+export type MeasurementType =
+  | 'temperature'
+  | 'humidity'
+  | 'switch'
+  | 'on-off'
+  | 'contact'
+  | 'luminance'
+  | 'presence'
+  | 'air-quality'
 
 export type SensorReading<T = any> = {
   origin: string
