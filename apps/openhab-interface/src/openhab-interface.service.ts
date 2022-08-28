@@ -4,7 +4,7 @@ import { SensorReading } from '@core/sensor-reading.type'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import EventSource from 'eventsource'
-import { OnOff } from '@core/measurement-types/on-off'
+import { OnOff } from '@core/measurement-types/on-off.type'
 
 type OpenHabEvent = {
   topic: string

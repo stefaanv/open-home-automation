@@ -1,14 +1,6 @@
-export type MeasurementType =
-  | 'temperature'
-  | 'humidity'
-  | 'switch'
-  | 'on-off'
-  | 'contact'
-  | 'luminance'
-  | 'presence'
-  | 'air-quality'
+import { MeasurementType } from './measurement-types/measurement-type.type'
 
-export type SensorReading<T = any> = {
+export type SensorReading<T extends string | number = string> = {
   origin: string
   time: Date
   type: MeasurementType

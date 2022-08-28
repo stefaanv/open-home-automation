@@ -1,6 +1,7 @@
 {
   "interfaceSpecific": {
-    "apiKey": "7A5A3D4C96"
+    "apiKey": "7A5A3D4C96",
+    "baseUrl": "http://192.168.0.10:8081/api/{{apiKey}}"
   },
   "fromInterface": {
     "interfaceSpecific": {
@@ -26,6 +27,12 @@
       {
         "nameFilter": "(?<sensorName>[\\w:]+)_switch",
         "measurementType": "switch"
+      }
+    ],
+    "actuatorMappers": [
+      {
+        "nameFilter": "(?<actuatorName>[\\w:]+)_plug",
+        "actuatorType": "relay"
       }
     ],
     "oldSensorMappers": [
