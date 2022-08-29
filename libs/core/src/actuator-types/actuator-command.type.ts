@@ -1,4 +1,4 @@
-import { ActuatorType } from './actuator-type.type'
+import { ActuatorType } from './actuator.type'
 
 export type ActuatorCommand = {
   origin: string

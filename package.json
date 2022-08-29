@@ -31,7 +31,8 @@
     "handlebars": "^4.7.7",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
-    "rxjs": "^7.2.0"
+    "rxjs": "^7.2.0",
+    "tcp-port-used": "^1.0.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^8.2.8",
@@ -42,6 +43,7 @@
     "@types/jest": "27.5.0",
     "@types/node": "^16.0.0",
     "@types/supertest": "^2.0.11",
+    "@types/tcp-port-used": "^1.0.1",
     "@types/ws": "^8.5.3",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",

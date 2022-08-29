@@ -1,12 +1,12 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/openhab-interface/src",
+  "sourceRoot": "apps/tahoma-interface/src",
   "monorepo": true,
-  "root": "apps/openhab-interface",
+  "root": "apps/tahoma-interface",
   "compilerOptions": {
     "webpack": false,
-    "tsConfigPath": "apps/openhab-interface/tsconfig.app.json",
+    "tsConfigPath": "apps/tahoma-interface/tsconfig.app.json",
     "deleteOutDir": true,
     "assets": [
       "**/*.json"
@@ -39,6 +39,15 @@
       "sourceRoot": "apps/phoscon-interface/src",
       "compilerOptions": {
         "tsConfigPath": "apps/phoscon-interface/tsconfig.app.json"
+      }
+    },
+    "tahoma-interface": {
+      "type": "application",
+      "root": "apps/tahoma-interface",
+      "entryFile": "main",
+      "sourceRoot": "apps/tahoma-interface/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/tahoma-interface/tsconfig.app.json"
       }
     }
   }

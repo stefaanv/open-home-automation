@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common'
-import { OpenhabInterfaceService } from './openhab-interface.service'
-import { ConfigModule } from '@nestjs/config'
-import configuration from '@core/configuration'
 import { CoreModule } from '@core/core.module'
+import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
+import { TahomaInterfaceService } from './tahoma-interface.service'
+import configuration from '@core/configuration'
 
-export const APP_NAME = 'openhab-interface'
+export const APP_NAME = 'tahoma-interface'
 
 @Module({
   imports: [
@@ -13,6 +13,6 @@ export const APP_NAME = 'openhab-interface'
       load: [configuration],
     }),
   ],
-  providers: [OpenhabInterfaceService],
+  providers: [TahomaInterfaceService],
 })
-export class OpenhabInterfaceModule {}
+export class TahomaInterfaceModule {}

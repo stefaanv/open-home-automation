@@ -1,5 +1,4 @@
-import { ActuatorType } from '@core/actuator-type.type'
-import { CommandType } from '@core/command-type.type'
+import { ActuatorType } from '@core/actuator-types/actuator.type'
 import { MeasurementType } from '@core/measurement-types/measurement-type.type'
 import {
   HumidityState,
@@ -23,8 +22,9 @@ export type PhosconStateTypeName =
   | 'ZHASwitch'
   | 'On/Off plug-in unit'
 
+//TODO ignore lists naar config verplaatsen
 export const SENSOR_IGNORE_LIST = ['Range extender', 'Configuration', 'unknown', 'Daylight']
-export const ACTUATOR_IGNORE_LIST = ['Range extender', 'Configuration']
+export const ACTUATOR_IGNORE_LIST = ['Range extender', 'Configuration', 'Eethoek']
 
 export const SENSOR_TYPE_MAPPERS: Record<PhosconStateTypeName, [string, MeasurementType]> = {
   ZHALightLevel: ['_lumi', 'luminance'],
@@ -37,7 +37,7 @@ export const SENSOR_TYPE_MAPPERS: Record<PhosconStateTypeName, [string, Measurem
   'On/Off plug-in unit': ['_cnct', 'contact'],
 }
 
-export const ACTUATOR_TYPE_MAPPERS: Record<string, [string, CommandType]> = {
+export const ACTUATOR_TYPE_MAPPERS: Record<string, [string, ActuatorType]> = {
   'On/Off plug-in unit': ['_relay', 'on-off'],
 }
 

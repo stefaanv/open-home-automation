@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config'
 import configuration from '@core/configuration'
 import { CoreModule } from '@core/core.module'
 
+export const APP_NAME = 'phoscon-interface'
+
 @Module({
   imports: [
     CoreModule,

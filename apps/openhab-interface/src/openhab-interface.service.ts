@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import EventSource from 'eventsource'
 import { OnOff } from '@core/measurement-types/on-off.type'
+import { SensorMapperConfig } from '@core/configuration/sensor-mapper-config'
 
 type OpenHabEvent = {
   topic: string
@@ -17,19 +18,6 @@ type OpenHabPayload = {
   value: string
   oldType: string
   oldValue: string
-}
-
-//(payload, lastUpdate, mapper, now)
-type Transformer<T> = (payload: OpenHabPayload, lastUpdate: SensorReading<T>, now: Date) => SensorReading<T>
-
-export type SensorMapper = {
-  nameFilter: RegExp
-  measurementType: string
-}
-
-export type SensorMapperConfig = {
-  nameFilter: string
-  measurementType: string
 }
 
 function regexTest(s: string, r: RegExp) {
@@ -50,7 +38,7 @@ const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 @Injectable()
 export class OpenhabInterfaceService {
   private readonly _generalTopicFilter: RegExp
-  private readonly _sensorMappers: SensorMapper[]
+  private readonly _sensorMappers: SensorMapperConfig[]
   private readonly _oldStates: Record<string, SensorReading<any>>
   private _processingStarted = false
 
@@ -66,10 +54,16 @@ export class OpenhabInterfaceService {
     if (eventUrl) this._log.warn(EVENT_URL_KEY + EMPTY_ERROR_MSG)
     const mappersConfig = this._config.get<SensorMapperConfig[]>(MEASUREMENT_MAPPER_KEY, [])
     if (mappersConfig) this._log.warn(MEASUREMENT_MAPPER_KEY + EMPTY_ERROR_MSG)
-    this._sensorMappers = mappersConfig.map(c => ({
-      nameFilter: new RegExp(c.nameFilter),
-      measurementType: c.measurementType,
-    }))
+    this._sensorMappers = mappersConfig.map(c =>
+      c.type === 'generic'
+        ? {
+            nameFilter: new RegExp(c.nameFilter),
+            measurementType: c.measurementType,
+          }
+        : {
+            //TODO nog implementeren
+          },
+    )
     this._oldStates = {}
 
     // Setting up de SSE link to Openhab
@@ -77,12 +71,13 @@ export class OpenhabInterfaceService {
     es.onmessage = (evt: MessageEvent<any>) => this.sseEventHandler(evt)
     es.onerror = error => this._log.error(JSON.stringify(error))
 
+    /*
     this._mqttDriver.subscribe(
       (tUpd: SensorReading) => this.mqttCallback(tUpd),
       [
-        /*'oha/#'*/
       ],
     )
+    */
   }
 
   // Openhab SSE link event handler

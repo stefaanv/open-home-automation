@@ -7,137 +7,22 @@
     "interfaceSpecific": {
       "eventUrl": "ws://192.168.0.10:443"
     },
+    "ignore": "(Range|Configuration|unknown|Daylight|Eethoek|On\\/Off|Presence|LightLevel|Temperature)[\\w\\s]*",
     "sensorMappers": [
       {
-        "nameFilter": "(?<sensorName>[\\w:]+)_multi",
-        "measurementType": "multi"
-      },
-      {
-        "nameFilter": "(?<sensorName>[\\w:]+)_lumi",
-        "measurementType": "luminance"
-      },
-      {
-        "nameFilter": "(?<sensorName>[\\w:]+)_cnct",
-        "measurementType": "contact"
-      },
-      {
-        "nameFilter": "(?<sensorName>[\\w:]+)_plug",
-        "measurementType": "relay"
-      },
-      {
-        "nameFilter": "(?<sensorName>[\\w:]+)_switch",
-        "measurementType": "switch"
-      }
-    ],
-    "actuatorMappers": [
-      {
-        "nameFilter": "(?<actuatorName>[\\w:]+)_plug",
-        "actuatorType": "relay"
-      }
-    ],
-    "oldSensorMappers": [
-      {
-        "uid": "5c:02:72:ff:fe:c7:34:ee-01-0402",
-        "measurementType": "temperature",
-        "name": "buiten-lucht-temp"
-      },
-      {
-        "uid": "04:cf:8c:df:3c:78:6f:5b-01-0400",
-        "measurementType": "luminance",
-        "name": "badkamer-lumi"
-      },
-      {
-        "uid": "00:12:4b:00:22:6b:08:b3-01-0402",
-        "measurementType": "temperature",
-        "name": "buiten-lucht-temp"
-      },
-      {
-        "uid": "00:12:4b:00:22:6b:08:b3-01-0402",
-        "measurementType": "temperature",
-        "name": "slpk4-sonoff-temp"
-      },
-      {
-        "uid": "00:12:4b:00:22:6b:08:b3-01-0405",
-        "measurementType": "humidity",
-        "name": "vocht-slpk4-sonoff-vocht"
-      },
-      {
-        "uid": "00:15:8d:00:01:e4:a9:70-01-0406",
-        "measurementType": "presence",
-        "name": "living-eethoek-nw-pres"
-      },
-      {
-        "uid": "00:15:8d:00:01:e4:a9:70-01-0400",
-        "measurementType": "luminance",
-        "name": "living-eethoek-nw-lumi"
-      },
-      {
-        "uid": "04:cf:8c:df:3c:7f:09:e8-01-0400",
-        "measurementType": "luminance",
-        "name": "buiten-zuid-lumi"
-      },
-      {
-        "uid": "04:cf:8c:df:3c:7f:14:6a-01-0400",
-        "measurementType": "luminance",
-        "name": "buiten-west-lumi"
-      },
-      {
-        "uid": "00:17:88:01:06:48:9f:5f-02-0406",
-        "measurementType": "presence",
-        "name": "philips-niet-in-gebruik-pres"
-      },
-      {
-        "uid": "00:17:88:01:06:48:9f:5f-02-0400",
-        "measurementType": "luminance",
-        "name": "philips-niet-in-gebruik-lumi"
-      },
-      {
-        "uid": "00:17:88:01:06:48:9f:5f-02-0402",
-        "measurementType": "temperature",
-        "name": "philips-niet-in-gebruik-temp"
-      },
-      {
-        "uid": "54:ef:44:10:00:3e:89:a0-01-0405",
-        "measurementType": "humidity",
-        "name": "bureau-aqara-vocht"
-      },
-      {
-        "uid": "54:ef:44:10:00:3e:89:a0-01-000c",
-        "remark": "ZHAAirQuality",
-        "name": "bureau-aqara-airq"
-      },
-      {
-        "uid": "54:ef:44:10:00:3e:89:a0-01-0402",
-        "measurementType": "temperature",
-        "name": "bureau-aqara-temp"
-      },
-      {
-        "uid": "00:15:8d:00:05:42:3b:e2-01-0006",
-        "remark": "type=ZHAOpenClose",
-        "measurementType": "switch",
-        "name": "badkamer-venster-cnct"
-      },
-      {
-        "uid": "8c:f6:81:ff:fe:e9:0a:1d-01",
-        "name": "Tuya_RPT Range extender 4"
-      },
-      {
-        "uid": "8c:f6:81:ff:fe:e3:7e:da-01",
-        "name": "Tuya_RPT Range extender 5"
-      },
-      {
-        "uid": "c4:98:86:00:00:0f:6c:b1-01",
-        "name": "INNR On/Off plug-in unit 7"
-      },
-      {
-        "uid": "c4:98:86:00:00:0f:8e:9b-01",
-        "name": "INNR On/Off plug-in unit 6"
-      },
-      {
-        "uid": "00:21:2e:ff:ff:06:98:39-01",
-        "name": "Conbee II configuration tool"
+        "type": "generic",
+        "nameFilter": "(?<sensorName>[\\w:]+)_(multi|lumi|cnct|plug|switch)"
       }
     ]
   },
-  "toInterface": {}
+  "toInterface": {
+    "ignore": "(Range|Configuration|Eethoek)[\\w\\s]*",
+    "actuatorMappers": [
+      {
+        "type": "generic",
+        "nameFilter": "(?<actuatorName>[\\w:]+)_plug",
+        "actuatorType": "on-off"
+      }
+    ]
+  }
 }

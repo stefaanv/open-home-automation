@@ -1,22 +1,20 @@
 {
+  "interfaceSpecific": {
+    "authorizationToken": "63086aa09f3085ae7199",
+    "baseUrl": "https://192.168.0.120:8443/enduser-mobile-web/1/enduserAPI"
+  },
   "fromInterface": {
-    "interfaceSpecific": {
-      "eventUrl": "http://192.168.0.10:8080/rest/events",
-      "generalTopicFilter": "openhab\\/items\\/(?<topic>[\\w:]+)\\/statechanged"
-    },
+    "interfaceSpecific": {},
     "sensorMappers": [
       {
-        "type": "generic",
         "nameFilter": "(?<topic>[\\w:]+(_temp|_temp_rfx))",
         "measurementType": "temperature"
       },
       {
-        "type": "generic",
         "nameFilter": "(?<topic>[\\w:]+_vocht)",
         "measurementType": "humidity"
       },
       {
-        "type": "generic",
         "nameFilter": "vlg_(?<topic>[\\w:]+)",
         "measurementType": "on-off"
       }
