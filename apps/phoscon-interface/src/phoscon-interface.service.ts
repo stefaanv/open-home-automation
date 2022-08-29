@@ -7,31 +7,15 @@ import WebSocket from 'ws'
 import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
 import { PhosconActuatorConfig, PhosconEvent, PhosconSensorConfig } from './types'
-import {
-  ActuatorSwitchCommand,
-  ACTUATOR_IGNORE_LIST,
-  ACTUATOR_TYPE_MAPPERS,
-  SENSOR_IGNORE_LIST,
-  SENSOR_TYPE_MAPPERS,
-  SENSOR_VALUE_MAPPERS,
-} from './constants'
+import { ActuatorSwitchCommand, ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS, SENSOR_VALUE_MAPPERS } from './constants'
 import { MeasurementType } from '@core/measurement-types/measurement-type.type'
 import { ActuatorType } from '@core/actuator-types/actuator.type'
-import { GenericSensorMapperConfig, SensorMapperConfig } from '@core/configuration/sensor-mapper-config'
+import { SensorMapperConfig } from '@core/configuration/sensor-mapper-config'
+import { ActuatorMapperConfig } from '@core/configuration/actuator-mapper-config'
 
 export type SensorMapper = {
   nameFilter: RegExp
   measurementType: MeasurementType
-}
-
-export type ActuatorMapper = {
-  nameFilter: RegExp
-  actuatorType: ActuatorType
-}
-
-export type ActuatorMapperConfig = {
-  nameFilter: string
-  actuatorType: ActuatorType
 }
 
 function regexTest(s: string, r: RegExp) {
@@ -58,6 +42,7 @@ export class PhosconInterfaceService {
   private readonly _apiKey: string
   private readonly _actuators: (PhosconActuatorConfig & { actuatorType: ActuatorType })[] = []
   private readonly _sensors: (PhosconSensorConfig & { measurementType: MeasurementType })[] = []
+  private _ignoreIds: number[] = []
   private _processingStarted = false
   private readonly _axios: Axios
 
@@ -98,48 +83,62 @@ export class PhosconInterfaceService {
 
   private async configureActuators(config: ConfigService) {
     // configuration pre-processing
-    const mappersConfig = this._config.get<ActuatorMapperConfig[]>(ACTUATOR_MAPPER_KEY, [])
-    if (!mappersConfig) this._log.warn(ACTUATOR_MAPPER_KEY + EMPTY_ERROR_MSG)
+    const actuatorMapperConfig = this._config.get<ActuatorMapperConfig[]>(ACTUATOR_MAPPER_KEY, [])
+    if (!actuatorMapperConfig) this._log.warn(ACTUATOR_MAPPER_KEY + EMPTY_ERROR_MSG)
 
-    const actuatorMappers = mappersConfig.map(c => ({
-      nameFilter: new RegExp(c.nameFilter),
-      actuatorType: c.actuatorType,
-    }))
+    // Turn strings into regex'es
+    actuatorMapperConfig.forEach(amc => {
+      if (amc.type === 'generic') {
+        amc.nameFilter = new RegExp(amc.nameFilter)
+      } else {
+        //TODO nog implementeren
+      }
+    })
 
-    // get known actuators from phoscon
+    // discover actuators information from phoscon
+    const ignoreFilter = new RegExp(config.get<string>(ACTUATOR_IGNORE_KEY))
     const actuators = await this._axios.get<Record<string, PhosconActuatorConfig>>('lights')
+    const ids = Object.keys(actuators.data).map(id => parseInt(id))
 
     // process the received actuator info
-    for (const id in actuators.data) {
+    for await (const id of ids) {
       // extract actuator ID
-      const actuatorConfig = actuators.data[id]
+      const actuatorInfo = actuators.data[id]
 
       // Ignore if the name is in the ignore list
-      if (ACTUATOR_IGNORE_LIST.some(s => actuatorConfig.type.startsWith(s))) {
-        this._log.warn(`Not processing actuator type "${actuatorConfig.type}"`)
+      if (regexTest(actuatorInfo.name, ignoreFilter)) {
+        this._log.debug(`Ignoring sensor "${actuatorInfo.name}"`)
         continue
       }
 
       // Get mapper info from (pre=precessed) configuration
-      const mapper = actuatorMappers.find(m => regexTest(actuatorConfig.name, m.nameFilter))
-      if (!mapper) {
-        // no mapping found -> configuration needs updating
-        const msg = `NO mapping for actuator "${actuatorConfig.name}", type=${actuatorConfig.type}, model=${actuatorConfig.modelid} (id=${id})`
-        this._log.warn(msg)
-        console.log(JSON.stringify(actuatorConfig))
-      } else {
-        // mapping available -> create the sensor
-        const actuatorName = regexExtract(actuatorConfig.name, mapper.nameFilter, 'actuatorName')
-        const typeMap = ACTUATOR_TYPE_MAPPERS[actuatorConfig.type]
+      const actuatorMapper = actuatorMapperConfig.find(
+        amc => (amc.type === 'generic' ? regexTest(actuatorInfo.name, amc.nameFilter as RegExp) : false),
+        //TODO nog branch implementeren voor instance config
+      )
 
+      if (!actuatorMapper) {
+        // no mapping found -> configuration needs updating
+        const msg = `NO mapping for actuator "${actuatorInfo.name}", type=${actuatorInfo.type}, model=${actuatorInfo.modelid} (id=${id})`
+        this._log.warn(msg)
+        console.log(JSON.stringify(actuatorInfo))
+      } else {
+        // mapping available -> create the actuator
+        const actuatorName =
+          actuatorMapper.type === 'generic'
+            ? regexExtract(actuatorInfo.name, actuatorMapper.nameFilter as RegExp, 'actuatorName')
+            : actuatorMapper.name
+
+        //convert zigbee types into AHO command types
+        const typeMap = ACTUATOR_TYPE_MAPPERS[actuatorInfo.type]
         if (!typeMap) {
           // actuator type not known -> this program needs updating
-          this._log.warn(`Unknown actuator type ${actuatorConfig.type}, full payload below`)
-          console.log(actuatorConfig)
+          this._log.warn(`Unknown actuator type ${actuatorInfo.type}, full payload below`)
+          console.log(actuatorInfo)
         } else {
           const [nameExtension, commandType] = typeMap
-          this._actuators[parseInt(id)] = {
-            ...actuatorConfig,
+          this._actuators[id] = {
+            ...actuatorInfo,
             actuatorType: commandType,
             name: actuatorName + nameExtension,
           }
@@ -169,6 +168,7 @@ export class PhosconInterfaceService {
       }
     })
 
+    // discover sensor and actuators information from phoscon
     const sensorInfo = await this._axios.get<PhosconSensorConfig[]>('sensors')
     const actuatorInfo = await this._axios.get<PhosconSensorConfig[]>('lights')
     const combinedInfo = { ...actuatorInfo.data, ...sensorInfo.data }
@@ -181,7 +181,8 @@ export class PhosconInterfaceService {
 
       // Ignore if the name is in the ignore list
       if (regexTest(sensorInfo.name, ignoreFilter)) {
-        this._log.warn(`Ignoring sensor "${sensorInfo.name}"`)
+        this._log.debug(`Ignoring sensor "${sensorInfo.name}" (id=${id})`)
+        this._ignoreIds = [...this._ignoreIds, id]
         continue
       }
 
@@ -191,6 +192,7 @@ export class PhosconInterfaceService {
         smc => (smc.type === 'generic' ? regexTest(sensorInfo.name, smc.nameFilter as RegExp) : false),
         //TODO nog branch implementeren voor instance config
       )
+
       if (!sensorMapper) {
         // no mapping found -> configuration needs updating
         const msg = `NO mapping for sensor "${sensorInfo.name}", type=${sensorInfo.type}, model=${sensorInfo.modelid} (id=${id})`
@@ -208,7 +210,7 @@ export class PhosconInterfaceService {
         if (!typeMap) {
           // sensor type not known -> this program needs updating
           this._log.warn(`Unknown Zigbee type ${sensorInfo.type}, full payload below`)
-          console.log(config)
+          console.log(sensorInfo)
         } else {
           const [nameExtension, measurementType] = typeMap
           this._sensors[id] = {
@@ -231,7 +233,7 @@ export class PhosconInterfaceService {
     const now = new Date()
     const payload: PhosconEvent = JSON.parse(event.data.toString())
     try {
-      if (payload.state && payload.r !== 'groups') {
+      if (payload.state && payload.r !== 'groups' && !this._ignoreIds.includes(parseInt(payload.id))) {
         // if attr property is present then packet is repeat config
         // state change event
         //TODO transformer voor presence toevoegen
@@ -248,7 +250,7 @@ export class PhosconInterfaceService {
             const formattedValue = valueMapper.formattedValue(value, unit)
             const update = {
               time: now,
-              type: mapper.commandType,
+              type: mapper.measurementType,
               name: mapper.name,
               value,
               formattedValue,

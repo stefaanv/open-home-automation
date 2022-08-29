@@ -16,7 +16,7 @@
     ]
   },
   "toInterface": {
-    "ignore": "(Range|Configuration|Eethoek)[\\w\\s]*",
+    "ignore": "(Range|Configuration|On\\/Off|Eethoek)[\\w\\s]*",
     "actuatorMappers": [
       {
         "type": "generic",
