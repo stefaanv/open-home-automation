@@ -57,15 +57,6 @@ export type PhosconState =
   | OpenClosedState
   | SwitchState
 
-export type PhosconStateTypeName =
-  | 'ZHAPresence'
-  | 'ZHALightLevel'
-  | 'ZHATemperature'
-  | 'ZHAHumidity'
-  | 'ZHAOpenClose'
-  | 'ZHAAirQuality'
-  | 'ZHASwitch'
-
 export type BaseState = {
   lastupdated: string //date
 }

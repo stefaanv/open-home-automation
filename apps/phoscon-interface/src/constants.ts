@@ -13,10 +13,20 @@ import {
   TemperatureState,
 } from './types'
 
-export const SENSOR_IGNORE_LIST = ['On/Off plug-in', 'Range extender', 'Configuration', 'unknown', 'Daylight']
+export type PhosconStateTypeName =
+  | 'ZHAPresence'
+  | 'ZHALightLevel'
+  | 'ZHATemperature'
+  | 'ZHAHumidity'
+  | 'ZHAOpenClose'
+  | 'ZHAAirQuality'
+  | 'ZHASwitch'
+  | 'On/Off plug-in unit'
+
+export const SENSOR_IGNORE_LIST = ['Range extender', 'Configuration', 'unknown', 'Daylight']
 export const ACTUATOR_IGNORE_LIST = ['Range extender', 'Configuration']
 
-export const SENSOR_TYPE_MAPPERS: Record<string, [string, MeasurementType]> = {
+export const SENSOR_TYPE_MAPPERS: Record<PhosconStateTypeName, [string, MeasurementType]> = {
   ZHALightLevel: ['_lumi', 'luminance'],
   ZHAPresence: ['_pres', 'presence'],
   ZHATemperature: ['_temp', 'temperature'],
@@ -92,3 +102,5 @@ export const SENSOR_VALUE_MAPPERS: Record<
     formattedValue: (value, unit) => value as string,
   },
 }
+
+export type ActuatorSwitchCommand = { switch: 'on' | 'off' }

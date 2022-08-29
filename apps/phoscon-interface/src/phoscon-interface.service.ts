@@ -8,8 +8,10 @@ import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
 import { PhosconActuatorConfig, PhosconEvent, PhosconSensorConfig } from './types'
 import {
+  ActuatorSwitchCommand,
   ACTUATOR_IGNORE_LIST,
   ACTUATOR_TYPE_MAPPERS,
+  PhosconStateTypeName,
   SENSOR_IGNORE_LIST,
   SENSOR_TYPE_MAPPERS,
   SENSOR_VALUE_MAPPERS,
@@ -58,8 +60,8 @@ const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
-  private readonly _actuators: Record<number, PhosconActuatorConfig & { commandType: CommandType }> = {}
-  private readonly _sensors: Record<number, PhosconSensorConfig & { measurementType: MeasurementType }> = {}
+  private readonly _actuators: (PhosconActuatorConfig & { commandType: CommandType })[] = []
+  private readonly _sensors: (PhosconSensorConfig & { measurementType: MeasurementType })[] = []
   private _processingStarted = false
   private readonly _axios: Axios
 
@@ -95,7 +97,6 @@ export class PhosconInterfaceService {
     const actuators = await this._axios.get<Record<string, PhosconActuatorConfig>>('lights')
 
     // process the received actuator info
-    console.log('ACTUATOR_IGNORE_LIST', ACTUATOR_IGNORE_LIST)
     for (const id in actuators.data) {
       // extract actuator ID
       const actuatorConfig = actuators.data[id]
@@ -133,22 +134,31 @@ export class PhosconInterfaceService {
         }
       }
     }
-    console.log(this._actuators)
+    const commandTemplate = Handlebars.compile(config.get<string>('mqtt.commandTemplate'))
+    const prefix = config.get<string>('mqtt.topicPrefix')
+    const mqttTopics = Object.values(this._actuators).map<string>(a =>
+      commandTemplate({ prefix, actuatorName: a.name }),
+    )
+    this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
   }
 
   private async configureSensors(config: ConfigService) {
     // configuration pre-processing
     const mappersConfig = this._config.get<SensorMapperConfig[]>(MEASUREMENT_MAPPER_KEY, [])
     if (!mappersConfig) this._log.warn(MEASUREMENT_MAPPER_KEY + EMPTY_ERROR_MSG)
-    const sensorMappers = mappersConfig.map(c => ({
+    const sensorTypeMappers = mappersConfig.map(c => ({
       nameFilter: new RegExp(c.nameFilter),
       measurementType: c.measurementType,
     }))
 
-    const sensors = await this._axios.get<Record<string, PhosconSensorConfig>>('sensors')
-    for (const id in sensors.data) {
+    const sensorsOnly = await this._axios.get<PhosconSensorConfig[]>('sensors')
+    const actuators = await this._axios.get<PhosconSensorConfig[]>('lights')
+    const sensors = { ...actuators.data, ...sensorsOnly.data }
+    console.log('sensors', sensors)
+    console.log('actuators', actuators.data)
+    for (const id in sensors) {
       // extract sensor ID
-      const sensorConfig = sensors.data[id]
+      const sensorConfig = sensors[id]
 
       // Ignore if the name is in the ignore list
       if (SENSOR_IGNORE_LIST.some(s => sensorConfig.name.startsWith(s))) {
@@ -157,7 +167,7 @@ export class PhosconInterfaceService {
       }
 
       // Get mapper info from (pre=precessed) configuration
-      const mapper = sensorMappers.find(m => regexTest(sensorConfig.name, m.nameFilter))
+      const mapper = sensorTypeMappers.find(m => regexTest(sensorConfig.name, m.nameFilter))
       if (!mapper) {
         // no mapping found -> configuration needs updating
         const msg = `NO mapping for sensor "${sensorConfig.name}", type=${sensorConfig.type}, model=${sensorConfig.modelid} (id=${id})`
@@ -207,10 +217,10 @@ export class PhosconInterfaceService {
         //TODO unit toevoegen aan SensorReading
         //TODO stringValue toevoegen aan SensorReading
         const state = payload.state
-        const mapper = this._actuators[parseInt(payload.id)]
+        const mapper = this._sensors[payload.id]
         if (mapper) {
           this._log.debug(`${mapper.name} (${mapper.type}), value=${JSON.stringify(state)}`)
-          const valueMapper = SENSOR_VALUE_MAPPERS[mapper.commandType as MeasurementType]
+          const valueMapper = SENSOR_VALUE_MAPPERS[mapper.measurementType as MeasurementType]
           if (valueMapper) {
             const value: string | number = valueMapper.transformer(state)
             const unit = valueMapper.unit
@@ -231,7 +241,7 @@ export class PhosconInterfaceService {
           }
         } else {
           this._log.warn(
-            `VALUE of unknown sensor (uid=${payload.uniqueid}), value=${JSON.stringify(state)}, full payload below`,
+            `VALUE of unknown sensor (id=${payload.id}), value=${JSON.stringify(state)}, full payload below`,
           )
           console.log(payload)
         }
@@ -242,7 +252,10 @@ export class PhosconInterfaceService {
     }
   }
 
-  private mqttCallback(t: SensorReading) {
+  private mqttCallback(actuatorName: string, data: any) {
     //TODO handle messages received from MQTT
+    const actuatorId = this._actuators.findIndex(a => a?.name === actuatorName)
+    const actuator = this._actuators[actuatorId]
+    this._axios.put(`lights/${actuatorId}/state`, { on: (data as ActuatorSwitchCommand).switch === 'on' })
   }
 }
