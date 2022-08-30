@@ -9,3 +9,58 @@
   ],
   "name": "DeviceStateChangedEvent"
 }
+
+rl_living_zuid -> {
+  "type": 11,
+  "name": "core:ManufacturerSettingsState",
+  "value": {
+    "current_position": 1512
+  }
+}
+rl_living_zuid -> {
+  "type": 1,
+  "name": "core:ClosureState",
+  "value": 3
+}
+rl_living_zuid -> {
+  "type": 1,
+  "name": "core:TargetClosureState",
+  "value": 100
+}
+rl_living_zuid -> {
+  "type": 6,
+  "name": "core:MovingState",
+  "value": true
+}
+rl_living_zuid -> {
+  "type": 11,
+  "name": "core:ManufacturerSettingsState",
+  "value": {
+    "current_position": 1944
+  }
+}
+rl_living_zuid -> {
+  "type": 1,
+  "name": "core:ClosureState",
+  "value": 4
+}
+rl_living_zuid -> {
+  "type": 1,
+  "name": "core:TargetClosureState",
+  "value": 4
+}
+rl_living_zuid -> {
+  "type": 6,
+  "name": "core:MovingState",
+  "value": false
+}
+buiten_oost_lumi -> {
+  "type": 1,
+  "name": "core:LuminanceState",
+  "value": 2612
+}
+buiten_oost_lumi -> {
+  "type": 1,
+  "name": "core:LuminanceState",
+  "value": 50
+}

@@ -3,13 +3,18 @@ import axios, { Axios } from 'axios'
 import { ConfigService } from '@nestjs/config'
 import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
+import Handlebars from 'handlebars'
 import https from 'https'
+import { ActuatorCommand } from '@core/actuator-types/actuator-command.type'
+import { RollerShutterActions, RollerShutterCommand } from '@core/actuator-types/roller-shutter-command.type'
+import { send } from 'process'
 
 type SomfyDevice = {
+  name: string | undefined
   label: string
   deviceURL: string
   available: boolean
-  type: 'SENSOR' | 'PROTOCOL_GATEWAY' | 'ACTUATOR'
+  type: number
   controllableName:
     | 'io:RollerShutterGenericIOComponent'
     | 'io:VerticalExteriorAwningIOComponent'
@@ -17,13 +22,53 @@ type SomfyDevice = {
     | 'io:LightIOSystemSensor'
 }
 
+type SomfyEvent = {
+  deviceURL: string
+  deviceStates: any[]
+  name: string
+}
+
+const ACTUATOR_NAME_TRANSLATION = { 'living zuid': 'rl_living_zuid' }
+const SENSOR_NAME_TRANSLATION = { 'Sun sensor': 'buiten_oost_lumi' }
+const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, string> = {
+  up: 'up',
+  down: 'close',
+  stop: 'stop',
+  toPosition: 'setClosure',
+}
+
 const API_BASE_URL_KEY = 'tahoma.interfaceSpecific.baseUrl'
 const API_AUTHORIZATION_TOKEN_KEY = 'tahoma.interfaceSpecific.authorizationToken'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
+const tahomaRollerShutterCommandCreator = (
+  deviceURL: string,
+  action: RollerShutterActions,
+  position: number | undefined,
+) => {
+  const commandName = ROLLERSHUTTER_COMMAND_TRANSLATION[action]
+  const parameters = action === 'toPosition' ? [position] : []
+  return {
+    label: action,
+    actions: [
+      {
+        deviceURL,
+        commands: [
+          {
+            name: commandName,
+            parameters,
+          },
+        ],
+      },
+    ],
+  }
+}
+
 @Injectable()
 export class TahomaInterfaceService {
   private readonly _axios: Axios
+  private _sensors: Record<string, SomfyDevice> = {}
+  private _actuators: Record<string, SomfyDevice> = {}
 
   constructor(
     private readonly _log: LoggingService,
@@ -52,9 +97,77 @@ export class TahomaInterfaceService {
 
   async discover() {
     const devices = await this._axios.get<SomfyDevice[]>('setup/devices')
-    const selectedActuators = devices.data.filter(d => d.controllableName === 'io:RollerShutterGenericIOComponent')
-    const selectedSensors = devices.data.filter(d => d.controllableName === 'io:LightIOSystemSensor')
-    console.log('selectedActuators', selectedActuators)
-    console.log('selectedSensors', selectedSensors)
+    this._actuators = devices.data
+      .filter(d => d.controllableName === 'io:RollerShutterGenericIOComponent')
+      .reduce((acc, curr) => {
+        const name = ACTUATOR_NAME_TRANSLATION[curr.label]
+        curr.name = name
+        acc[name] = curr
+        return acc
+      }, {})
+    this._sensors = devices.data
+      .filter(d => d.controllableName === 'io:LightIOSystemSensor')
+      .reduce((acc, curr) => {
+        curr.name = SENSOR_NAME_TRANSLATION[curr.label]
+        acc[curr.deviceURL] = curr
+        return acc
+      }, {})
+
+    // connect to MQTT server for incoming commands
+    const commandTemplate = Handlebars.compile('{{prefix}}/command/{{actuatorName}}')
+    const mqttTopics = Object.values(this._actuators).map<string>(a =>
+      commandTemplate({ prefix: 'oha', actuatorName: a.name }),
+    )
+    this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
+
+    // register an event listener with the Tahoma box
+    const result = await this._axios.post('events/register', {})
+    const eventListenerId = result.data.id
+    this._log.log(`Listening on ${eventListenerId}`)
+    setInterval(() => this.eventPoller(eventListenerId), 2000)
+  }
+
+  private async eventPoller(eventListenerId: string) {
+    const result = await this._axios.post<SomfyEvent[]>(`events/${eventListenerId}/fetch`, {})
+    if (result.data.length > 0) {
+      for await (const event of result.data) {
+        await this.processSomfyEvent(event)
+      }
+    }
+  }
+
+  private async processSomfyEvent(event: SomfyEvent) {
+    const actuatorName = Object.values(this._actuators).find(a => a.deviceURL === event.deviceURL)?.name
+    const sensorName = this._sensors[event.deviceURL]?.name
+    const name = sensorName ?? actuatorName
+    if (name && event.name === 'DeviceStateChangedEvent') {
+      event.deviceStates.forEach(ds => {
+        console.log(`${name} -> ${JSON.stringify(ds)}`)
+      })
+    } else {
+      console.log(`Unknown event for ${event.deviceURL} -> ${JSON.stringify(event)}`)
+    }
+  }
+
+  private mqttCallback(actuatorName: string, cmd: ActuatorCommand) {
+    //TODO handle messages received from MQTT
+    const actuator = this._actuators[actuatorName]
+    if (!actuator) {
+      this._log.warn(`${actuatorName} is not defined in the actuator list`)
+      return
+    }
+    if (actuator.controllableName === 'io:RollerShutterGenericIOComponent') {
+      const command = cmd as RollerShutterCommand
+      const outData = tahomaRollerShutterCommandCreator(actuator.deviceURL, command.action, command.position)
+      this._axios.post('exec/apply', outData).then(value => {
+        const msg = {
+          up: `Opening ${actuatorName}`,
+          down: `Closing ${actuatorName}`,
+          stop: `Stopping ${actuatorName}`,
+          toPosition: `Moving ${actuatorName} to ${command.position}% closure`,
+        }[command.action]
+        this._log.log(`${msg}. (${value.data.execId})`)
+      })
+    }
   }
 }
