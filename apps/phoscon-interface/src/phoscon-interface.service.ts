@@ -54,21 +54,19 @@ export class PhosconInterfaceService {
     // set log context
     this._log.setContext(PhosconInterfaceService.name)
 
-    // retriever API key from config
+    // retriever API key and BASE URL from config
     this._apiKey = this._config.get<string>(APIKEY_KEY, '')
     if (!this._apiKey) this._log.warn(APIKEY_KEY + EMPTY_ERROR_MSG)
-
-    // retriever API base url from config
     const apiBaseUrlTemplate = Handlebars.compile(this._config.get<string>(API_BASE_KEY, ''))
     const apiBaseUrl = apiBaseUrlTemplate({ apiKey: this._apiKey })
     if (!this._apiKey) this._log.warn(API_BASE_KEY + EMPTY_ERROR_MSG)
     this._axios = axios.create({ baseURL: apiBaseUrl, responseType: 'json' })
 
     // Start sensor and actuator discovery
-    this.discovery(_config)
+    this.discover(_config)
   }
 
-  private async discovery(config: ConfigService) {
+  private async discover(config: ConfigService) {
     await this.configureSensors(config)
     await this.configureActuators(config)
     this._log.log(`configuration done, starting the listener`)

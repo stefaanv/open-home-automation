@@ -8,6 +8,6 @@ export default async function nextAvailablePort() {
     inUse.push(port)
     port++
   }
-  if (inUse.length > 0) console.log(`Ports ${inUse} are in use`)
+  if (inUse.length > 0) console.log(`Ports ${inUse} ${inUse.length == 1 ? 'is' : 'are'} in use`)
   return port
 }
