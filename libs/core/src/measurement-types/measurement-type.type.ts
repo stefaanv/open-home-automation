@@ -8,3 +8,4 @@ export type MeasurementType =
   | 'presence'
   | 'air-quality'
   | 'closure'
+  | 'moving'

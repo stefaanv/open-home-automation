@@ -254,7 +254,7 @@ export class PhosconInterfaceService {
               formattedValue,
               unit,
               origin: 'phoscon',
-            } as SensorReading
+            } as SensorReading<string | number>
             this._mqttDriver.sendMeasurement(update)
           } else {
             this._log.warn(`Unknown measurement type ${mapper.commandType} full payload below`)

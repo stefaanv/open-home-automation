@@ -1,4 +1,4 @@
-import { ActuatorTypeName } from '@core/actuator-types/actuator-type-name.type'
+import { ActuatorType } from '@core/actuator-types/actuator.type'
 import { MeasurementType } from '@core/measurement-types/measurement-type.type'
 import {
   HumidityState,
@@ -37,8 +37,8 @@ export const SENSOR_TYPE_MAPPERS: Record<PhosconStateTypeName, [string, Measurem
   'On/Off plug-in unit': ['_cnct', 'contact'],
 }
 
-export const ACTUATOR_TYPE_MAPPERS: Record<string, [string, ActuatorTypeName]> = {
-  'On/Off plug-in unit': ['_relay', 'on-off-command'],
+export const ACTUATOR_TYPE_MAPPERS: Record<string, [string, ActuatorType]> = {
+  'On/Off plug-in unit': ['_relay', 'on-off'],
 }
 
 export const SENSOR_VALUE_MAPPERS: Record<
@@ -100,6 +100,16 @@ export const SENSOR_VALUE_MAPPERS: Record<
     },
     unit: '',
     formattedValue: (value, unit) => value as string,
+  },
+  closure: {
+    transformer: state => JSON.stringify(state),
+    unit: '',
+    formattedValue: (value, unit) => '',
+  },
+  moving: {
+    transformer: state => JSON.stringify(state),
+    unit: '',
+    formattedValue: (value, unit) => '',
   },
 }
 

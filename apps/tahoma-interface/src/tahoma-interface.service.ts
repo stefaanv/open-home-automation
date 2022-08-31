@@ -8,6 +8,9 @@ import https from 'https'
 import { ActuatorCommand } from '@core/actuator-types/actuator-command.type'
 import { RollerShutterActions, RollerShutterCommand } from '@core/actuator-types/roller-shutter-command.type'
 import { send } from 'process'
+import { MeasurementType } from '@core/measurement-types/measurement-type.type'
+import { SensorReading } from '@core/sensor-reading.type'
+import { Numeric } from '@core/measurement-types/numeric.type'
 
 type SomfyDevice = {
   name: string | undefined
@@ -24,7 +27,7 @@ type SomfyDevice = {
 
 type SomfyEvent = {
   deviceURL: string
-  deviceStates: any[]
+  deviceStates: { type: number; name: string; value: number | { current_position: number } }[]
   name: string
 }
 
@@ -142,7 +145,40 @@ export class TahomaInterfaceService {
     const name = sensorName ?? actuatorName
     if (name && event.name === 'DeviceStateChangedEvent') {
       event.deviceStates.forEach(ds => {
-        console.log(`${name} -> ${JSON.stringify(ds)}`)
+        let type: MeasurementType
+        let value = ds.value as number
+        let unit: string = ''
+        let formattedValue: string
+        switch (ds.name) {
+          case 'core:ClosureState':
+            type = 'closure'
+            unit = ' %'
+            formattedValue: value.toFixed(0) + unit
+            break
+          case 'core:LuminanceState':
+            type = 'luminance'
+            unit = ' Lux'
+            formattedValue: value.toFixed(0) + unit
+            break
+          case 'core:MovingState':
+            type = 'moving'
+            formattedValue: value.toString()
+            break
+          default:
+            return
+        }
+
+        const update = {
+          time: new Date(),
+          type,
+          name,
+          value,
+          formattedValue,
+          unit,
+          origin: 'Tahoma',
+        } as SensorReading<Numeric>
+        console.log(JSON.stringify(update))
+        this._mqttDriver.sendMeasurement(update)
       })
     } else {
       console.log(`Unknown event for ${event.deviceURL} -> ${JSON.stringify(event)}`)
