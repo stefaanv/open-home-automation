@@ -4,7 +4,7 @@ export type MeasurementType =
   | 'switch'
   | 'on-off'
   | 'contact'
-  | 'luminance'
+  | 'illuminance'
   | 'presence'
   | 'air-quality'
   | 'closure'
