@@ -27,7 +27,7 @@ export const SENSOR_IGNORE_LIST = ['Range extender', 'Configuration', 'unknown',
 export const ACTUATOR_IGNORE_LIST = ['Range extender', 'Configuration', 'Eethoek']
 
 export const SENSOR_TYPE_MAPPERS: Record<PhosconStateTypeName, [string, MeasurementType]> = {
-  ZHALightLevel: ['_lumi', 'luminance'],
+  ZHALightLevel: ['_lumi', 'illuminance'],
   ZHAPresence: ['_pres', 'presence'],
   ZHATemperature: ['_temp', 'temperature'],
   ZHAHumidity: ['_humi', 'humidity'],
@@ -64,7 +64,7 @@ export const SENSOR_VALUE_MAPPERS: Record<
     unit: '%rh',
     formattedValue: (value, unit) => (value as number).toFixed(0) + ' ' + unit,
   },
-  luminance: {
+  illuminance: {
     transformer: state => (state as LightLevelState).lux,
     unit: 'Lux',
     formattedValue: (value, unit) => (value as number).toFixed(0) + ' ' + unit,
