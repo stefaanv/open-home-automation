@@ -1,1 +1,1 @@
-export type CommandOnOff = 'on' | 'off'
+export type OnOffCommand = 'on' | 'off'

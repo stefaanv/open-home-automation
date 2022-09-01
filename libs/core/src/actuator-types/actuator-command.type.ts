@@ -1,9 +1,4 @@
-import { ActuatorType } from './actuator.type'
+import { OnOffCommand } from './on-off.type'
+import { RollerShutterCommand } from './roller-shutter-command.type'
 
-export type ActuatorCommand = {
-  origin: string
-  time: Date
-  type: ActuatorType
-  name: string
-  command: any
-}
+export type ActuatorCommand = OnOffCommand | RollerShutterCommand

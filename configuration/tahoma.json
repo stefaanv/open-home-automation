@@ -5,20 +5,7 @@
   },
   "fromInterface": {
     "interfaceSpecific": {},
-    "sensorMappers": [
-      {
-        "nameFilter": "(?<topic>[\\w:]+(_temp|_temp_rfx))",
-        "measurementType": "temperature"
-      },
-      {
-        "nameFilter": "(?<topic>[\\w:]+_vocht)",
-        "measurementType": "humidity"
-      },
-      {
-        "nameFilter": "vlg_(?<topic>[\\w:]+)",
-        "measurementType": "on-off"
-      }
-    ]
+    "sensorMappers": []
   },
   "toInterface": {}
 }

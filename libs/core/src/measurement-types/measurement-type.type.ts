@@ -7,3 +7,5 @@ export type MeasurementType =
   | 'illuminance'
   | 'presence'
   | 'air-quality'
+  | 'closure'
+  | 'moving'

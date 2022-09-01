@@ -101,6 +101,16 @@ export const SENSOR_VALUE_MAPPERS: Record<
     unit: '',
     formattedValue: (value, unit) => value as string,
   },
+  closure: {
+    transformer: state => JSON.stringify(state),
+    unit: '',
+    formattedValue: (value, unit) => '',
+  },
+  moving: {
+    transformer: state => JSON.stringify(state),
+    unit: '',
+    formattedValue: (value, unit) => '',
+  },
 }
 
 export type ActuatorSwitchCommand = { switch: 'on' | 'off' }

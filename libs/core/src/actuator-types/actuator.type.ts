@@ -1,1 +1,1 @@
-export type ActuatorType = 'on-off'
+export type ActuatorType = 'on-off' | 'roller-shutter'

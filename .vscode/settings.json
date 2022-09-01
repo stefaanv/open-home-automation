@@ -59,4 +59,5 @@
   "peacock.color": "#215732",
   "gitlens.proxy": {},
   "rest-client.excludeHostsForProxy": [],
+  "editor.experimental.stickyScroll.enabled": true,
 }
