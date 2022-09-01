@@ -7,7 +7,8 @@ export class SensorReadingMqttDataTypeSettings<TTypeIndicator> {
     readonly unit: string,
     readonly formatter: undefined | number | ValueFormatter,
   ) {}
-}
+} 
+
 export abstract class SensorReadingMqttData_base_class<TValue extends SensorReadingValueBaseType, TTypeIndicator> {
   origin: string
   time: Date
