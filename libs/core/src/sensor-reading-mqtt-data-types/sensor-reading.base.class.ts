@@ -1,9 +1,9 @@
 export type SensorReadingValueBaseType = object | string | number | boolean | null
 export type ValueFormatter = (value: SensorReadingValueBaseType, unit: string) => string
 
-export class SensorReadingMqttDataTypeSettings<TTypeIndicator extends string> {
+export class SensorValueTypeSettings<TValueTypeIndicator extends string> {
   constructor(
-    readonly type: TTypeIndicator,
+    readonly valueType: TValueTypeIndicator,
     readonly unit: string,
     readonly formatter: undefined | number | ValueFormatter,
   ) {}
@@ -11,46 +11,46 @@ export class SensorReadingMqttDataTypeSettings<TTypeIndicator extends string> {
 
 export abstract class SensorReadingMqttData_base_class<
   TValue extends SensorReadingValueBaseType,
-  TTypeIndicator extends string,
+  TValueTypeIndicator extends string,
 > {
   origin: string
   time: Date
   name: string
   formattedValue: string
   value: TValue
-  typeSettings: SensorReadingMqttDataTypeSettings<TTypeIndicator>
+  valueTypeSettings: SensorValueTypeSettings<TValueTypeIndicator>
 
   constructor(
     value: TValue,
     name: string,
     origin: string,
-    typeSettings: SensorReadingMqttDataTypeSettings<TTypeIndicator>,
+    valueTypeSettings: SensorValueTypeSettings<TValueTypeIndicator>,
     time: Date = new Date(),
   ) {
     this.value = value
     this.name = name
     this.time = time
     this.origin = origin
-    this.typeSettings = typeSettings
+    this.valueTypeSettings = valueTypeSettings
   }
 
   toString() {
-    const formatter = this.typeSettings.formatter
+    const formatter = this.valueTypeSettings.formatter
     let formattedValue = ''
     switch (typeof formatter) {
       case 'undefined': // no formatter defined for string type values
         formattedValue = this.value as string
         break
       case 'number':
-        formattedValue = `${(formatter as number).toFixed(formatter)} ${this.typeSettings.unit}`
+        formattedValue = `${(formatter as number).toFixed(formatter)} ${this.valueTypeSettings.unit}`
         break
       case 'function':
-        formattedValue = formatter(this.value, this.typeSettings.unit)
+        formattedValue = formatter(this.value, this.valueTypeSettings.unit)
     }
-    const { typeSettings, ...data } = {
-      type: this.typeSettings.type,
+    const { valueTypeSettings: typeSettings, ...data } = {
+      type: this.valueTypeSettings.valueType,
       ...this,
-      unit: this.typeSettings.unit,
+      unit: this.valueTypeSettings.unit,
       formattedValue,
     }
 

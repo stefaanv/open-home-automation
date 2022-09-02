@@ -1,8 +1,4 @@
-import {
-  SensorReadingMqttDataTypeSettings,
-  SensorReadingMqttData_base_class,
-  ValueFormatter,
-} from './sensor-reading.base.class'
+import { SensorValueTypeSettings, SensorReadingMqttData_base_class, ValueFormatter } from './sensor-reading.base.class'
 
 type NumericMqttDataTypes = 'temperature' | 'humidity' | 'illuminance'
 export class NumericMqttData<TTypeIndicator extends NumericMqttDataTypes> extends SensorReadingMqttData_base_class<
@@ -18,7 +14,7 @@ export class NumericMqttData<TTypeIndicator extends NumericMqttDataTypes> extend
     formatter: ValueFormatter,
     time: Date = new Date(),
   ) {
-    const typeSettings: SensorReadingMqttDataTypeSettings<TTypeIndicator> = { type, unit, formatter }
+    const typeSettings: SensorValueTypeSettings<TTypeIndicator> = { valueType: type, unit, formatter }
     super(value, name, origin, typeSettings, time)
     this.value = value
     this.name = name
