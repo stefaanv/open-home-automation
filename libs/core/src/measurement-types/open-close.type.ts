@@ -1,1 +1,1 @@
-export type OpenClosed = 'open' | 'closed' | undefined
+export type OpenClosed = ('open' | 'closed' | undefined) & { type: 'open-closed' }

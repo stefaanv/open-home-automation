@@ -1,1 +1,1 @@
-export type Numeric = number
+export type Numeric = number & { type: 'numeric' }

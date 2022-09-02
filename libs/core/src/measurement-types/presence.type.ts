@@ -1,1 +1,1 @@
-export type Presence = 'present' | 'absent' | undefined
+export type Presence = ('present' | 'absent' | undefined) & { type: 'presence' }
