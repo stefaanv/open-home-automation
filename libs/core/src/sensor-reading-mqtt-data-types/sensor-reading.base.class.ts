@@ -1,15 +1,18 @@
 export type SensorReadingValueBaseType = object | string | number | boolean | null
 export type ValueFormatter = (value: SensorReadingValueBaseType, unit: string) => string
 
-export class SensorReadingMqttDataTypeSettings<TTypeIndicator> {
+export class SensorReadingMqttDataTypeSettings<TTypeIndicator extends string> {
   constructor(
     readonly type: TTypeIndicator,
     readonly unit: string,
     readonly formatter: undefined | number | ValueFormatter,
   ) {}
-} 
+}
 
-export abstract class SensorReadingMqttData_base_class<TValue extends SensorReadingValueBaseType, TTypeIndicator> {
+export abstract class SensorReadingMqttData_base_class<
+  TValue extends SensorReadingValueBaseType,
+  TTypeIndicator extends string,
+> {
   origin: string
   time: Date
   name: string
@@ -17,12 +20,18 @@ export abstract class SensorReadingMqttData_base_class<TValue extends SensorRead
   value: TValue
   typeSettings: SensorReadingMqttDataTypeSettings<TTypeIndicator>
 
-  constructor(value: TValue, name: string, origin: string, time: Date = new Date()) {
+  constructor(
+    value: TValue,
+    name: string,
+    origin: string,
+    typeSettings: SensorReadingMqttDataTypeSettings<TTypeIndicator>,
+    time: Date = new Date(),
+  ) {
     this.value = value
     this.name = name
     this.time = time
     this.origin = origin
-    this.typeSettings
+    this.typeSettings = typeSettings
   }
 
   toString() {
