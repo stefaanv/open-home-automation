@@ -19,11 +19,20 @@ export class ActuatorBase<TUID extends number | string> {
 }
 
 export class DeviceList<TUID extends number | string> {
-  private readonly list: Record<TUID, DeviceBase<TUID>> = {}
+  private readonly _list: DeviceBase<TUID>[] = []
+
   public push(args: DeviceBase<TUID> | Array<DeviceBase<TUID>>) {
-    const array: Array<DeviceBase<TUID>> = args.hasOwnProperty('name') ? [args] : args
+    const array: DeviceBase<TUID>[] = args.hasOwnProperty('name') ? [args as DeviceBase<TUID>] : (args as DeviceBase<TUID>[])
     array.forEach(element => {
-      this.list[element.uid] = element
+      this._list.push(element)
     })
+  }
+
+  public get(uid: TUID): DeviceBase<TUID> | undefined {
+    return this._list.find(e => e.uid === uid)
+  }
+
+  public getAll(): DeviceBase<TUID>[] {
+    return this._list
   }
 }

@@ -4,10 +4,10 @@ import * as fns from 'date-fns'
 const brokerUrl = 'mqtt://192.168.0.10'
 const sensorTopicsPrefix = 'oha/sensor-reading'
 const subscribeTotopics = ['buiten_zuid_lumi', 'rl_living_zuid', 'buiten_lucht_temp', 'themostaat_bureau_temp']
-const UPPER_ILLUMINATION_LIMIT = 20000
-const LOWER_ILLUMINATION_LIMIT = 5000
-const HYSTERESIS_DELAY = 20 //seconds
-const REPORT_INTERVAL = 600 //seconds
+const UPPER_ILLUMINATION_LIMIT = 30000
+const LOWER_ILLUMINATION_LIMIT = 10000
+const HYSTERESIS_DELAY = 120 //seconds
+const REPORT_INTERVAL = 300 //seconds
 const EVALUATE_INTERVAL = 60 //seconds
 const TARGET_CLOSURE_STATE = 60
 const CLOSURE_OPEN_LIMIT = 5
@@ -34,6 +34,8 @@ const sensorNameTranslator = {
 let mqttClient: mqtt.AsyncClient
 
 async function bootstrap() {
+  console.log(`@${fns.format(new Date(), 'HH:mm:ss')} -> STARTING automation Rolluik Living zuid`)
+
   mqttClient = mqtt.connect(brokerUrl)
   mqttClient.on('connect', () => {
     console.log(`MQTT connected to ${brokerUrl}`)
