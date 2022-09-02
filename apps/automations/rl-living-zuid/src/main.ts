@@ -7,13 +7,13 @@ const subscribeTotopics = ['buiten_zuid_lumi', 'rl_living_zuid', 'buiten_lucht_t
 const UPPER_ILLUMINATION_LIMIT = 30000
 const LOWER_ILLUMINATION_LIMIT = 10000
 const HYSTERESIS_DELAY = 120 //seconds
-const REPORT_INTERVAL = 300 //seconds
+const REPORT_INTERVAL = 60 //seconds
 const EVALUATE_INTERVAL = 60 //seconds
 const TARGET_CLOSURE_STATE = 60
 const CLOSURE_OPEN_LIMIT = 5
-const CLOSURE_CLOSED_LIMIT = 55
-const ACTIVE_TIME_FROM = 12.5
-const ACTIVE_TIME_TILL = 20
+const CLOSURE_CLOSED_LIMIT = 40
+const ACTIVE_TIME_FROM = 9
+const ACTIVE_TIME_TILL = 21
 
 type State = {
   exteriorTemperature?: number
@@ -54,10 +54,12 @@ const report = () => {
 }
 
 const receiveCallback = (topic: string, message: Buffer) => {
-  const data = message.toString()
+  const msg = message.toString()
   const splitTopic = topic.split('/')
   const sensorName = splitTopic[splitTopic.length - 1]
-  const value: number = JSON.parse(data)['value']
+  const data = JSON.parse(msg)
+  if (sensorName === 'rl_living_zuid' && data['type'] !== 'closure') return
+  const value: number = data['value']
   state[sensorNameTranslator[sensorName]] = value
   evaluate()
 }
