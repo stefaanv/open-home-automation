@@ -7,7 +7,6 @@ import Handlebars from 'handlebars'
 import https from 'https'
 import { ActuatorCommand } from '@core/actuator-types/actuator-command.type'
 import { RollerShutterActions, RollerShutterCommand } from '@core/actuator-types/roller-shutter-command.type'
-import { send } from 'process'
 import { MeasurementType } from '@core/measurement-types/measurement-type.type'
 import { SensorReading } from '@core/sensor-reading.type'
 import { Numeric } from '@core/measurement-types/numeric.type'
@@ -19,10 +18,10 @@ type SomfyDevice = {
   available: boolean
   type: number
   controllableName:
-    | 'io:RollerShutterGenericIOComponent'
-    | 'io:VerticalExteriorAwningIOComponent'
-    | 'io:StackComponent'
-    | 'io:LightIOSystemSensor'
+  | 'io:RollerShutterGenericIOComponent'
+  | 'io:VerticalExteriorAwningIOComponent'
+  | 'io:StackComponent'
+  | 'io:LightIOSystemSensor'
 }
 
 type SomfyEvent = {
@@ -156,7 +155,7 @@ export class TahomaInterfaceService {
             formattedValue: value.toFixed(0) + unit
             break
           case 'core:LuminanceState':
-            type = 'luminance'
+            type = 'illuminance'
             unit = ' Lux'
             formattedValue: value.toFixed(0) + unit
             break

@@ -36,7 +36,14 @@
     "repositories": "Dump"
   },
   "gitlens.proxy": {},
-  "editor.experimental.stickyScroll.enabled": true,
   "thunder-client.saveToWorkspace": true,
   "editor.fontWeight": "normal",
+  "vsmqtt.brokerProfiles": [
+    {
+      "name": "rpi4",
+      "host": "192.168.0.10",
+      "port": 1883,
+      "clientId": "vsmqtt_client"
+    }
+  ],
 }
