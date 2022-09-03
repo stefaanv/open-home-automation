@@ -9,3 +9,4 @@ export type MeasurementType =
   | 'air-quality'
   | 'closure'
   | 'moving'
+  | 'open-closed'

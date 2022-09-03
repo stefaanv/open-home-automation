@@ -13,10 +13,15 @@ export default async () => {
   const configuration = JSON.parse(content)
 
   const files = await readdir(join(__dirname, CONFIG_FOLDER))
-  for await (const file of files.filter(f => !f.startsWith('config'))) {
+  for await (const file of files.filter(f => !f.startsWith('config') && f.endsWith('.json'))) {
     const content = await readFile(join(__dirname, CONFIG_FOLDER, file), { encoding: 'utf-8' })
     const application = file.replace('.json', '')
-    configuration[application] = JSON.parse(content)
+    try {
+      configuration[application] = JSON.parse(content)
+    } catch (error) {
+      console.error(error)
+      console.error(`in ${file}`)
+    }
   }
   // console.log(configuration)
   return configuration

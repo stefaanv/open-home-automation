@@ -1,37 +1,43 @@
+import { MeasurementType } from "@core/measurement-types/measurement-type.type"
+
 export type SensorReadingValueBaseType = object | string | number | boolean | null
 export type ValueFormatter = (value: SensorReadingValueBaseType, unit: string) => string
 
-export class SensorValueTypeSettings<TValueTypeIndicator extends string> {
+export class SensorValueTypeSettings {
   constructor(
-    readonly valueType: TValueTypeIndicator,
+    readonly valueType: MeasurementType,
     readonly unit: string,
     readonly formatter: undefined | number | ValueFormatter,
-  ) {}
+  ) { }
 }
 
-export abstract class SensorReadingMqttData_base_class<
+export class SensorReadingMqttData_base_class<
   TValue extends SensorReadingValueBaseType,
   TValueTypeIndicator extends string,
 > {
+  type: TValueTypeIndicator
   origin: string
   time: Date
   name: string
   formattedValue: string
   value: TValue
-  valueTypeSettings: SensorValueTypeSettings<TValueTypeIndicator>
+  valueTypeSettings: SensorValueTypeSettings
 
   constructor(
-    value: TValue,
+    type: TValueTypeIndicator,
     name: string,
     origin: string,
-    valueTypeSettings: SensorValueTypeSettings<TValueTypeIndicator>,
-    time: Date = new Date(),
+    valueTypeSettings: SensorValueTypeSettings,
   ) {
-    this.value = value
+    this.type = type
     this.name = name
-    this.time = time
     this.origin = origin
     this.valueTypeSettings = valueTypeSettings
+  }
+
+  update(value: TValue, time = new Date()) {
+    this.value = value
+    this.time = time
   }
 
   toString() {
@@ -42,7 +48,7 @@ export abstract class SensorReadingMqttData_base_class<
         formattedValue = this.value as string
         break
       case 'number':
-        formattedValue = `${(formatter as number).toFixed(formatter)} ${this.valueTypeSettings.unit}`
+        formattedValue = `${(this.value as number).toFixed(formatter)} ${this.valueTypeSettings.unit}`
         break
       case 'function':
         formattedValue = formatter(this.value, this.valueTypeSettings.unit)

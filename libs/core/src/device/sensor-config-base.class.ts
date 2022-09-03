@@ -17,20 +17,3 @@ export class SensorConfig extends SensorConfigBase<RegExp>{
       (d => ({ filter: new RegExp(d.filter), measurementType: d.measurementType }))
   }
 }
-
-export class ActuatorConfigBase<T extends string | RegExp>{
-  ignore: T
-  discover: Array<{ filter: T, commandType: CommandType | undefined }>
-  define: Array<{ filter: T, commandType: CommandType }>
-}
-
-export class ActuatorConfig extends ActuatorConfigBase<RegExp>{
-  constructor(config: ActuatorConfigBase<string>) {
-    super()
-    this.ignore = new RegExp(config.ignore)
-    this.discover = !config.discover ? undefined : config.discover.map<{ filter: RegExp, commandType: CommandType | undefined }>
-      (d => ({ filter: new RegExp(d.filter), commandType: d.commandType }))
-    this.define = !config.define ? undefined : config.define.map<{ filter: RegExp, commandType: CommandType }>
-      (d => ({ filter: new RegExp(d.filter), commandType: d.commandType }))
-  }
-}
