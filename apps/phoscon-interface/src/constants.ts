@@ -1,5 +1,10 @@
 import { ActuatorType } from '@core/actuator-types/actuator.type'
 import { MeasurementType } from '@core/measurement-types/measurement-type.type'
+import {
+  HumidityMqttData,
+  IlluminanceMqttData,
+  TemperatureMqttData,
+} from '@core/sensor-reading-mqtt-data-types/numberic-mqtt-data.type'
 import { OnOffMqttData } from '@core/sensor-reading-mqtt-data-types/on-off-mqtt-data.type'
 import { OpenClosedMqttData } from '@core/sensor-reading-mqtt-data-types/open-close-mqtt-data.type'
 import { PresenceMqttData } from '@core/sensor-reading-mqtt-data-types/presence-mqtt-data.type'
@@ -7,7 +12,6 @@ import {
   SensorReadingMqttData_base_class,
   SensorReadingValueBaseType,
   SensorValueTypeSettings,
-  ValueFormatter,
 } from '@core/sensor-reading-mqtt-data-types/sensor-reading.base.class'
 import { SwitchMqttData } from '@core/sensor-reading-mqtt-data-types/switch-mqtt-data.type'
 import {
@@ -28,7 +32,7 @@ export type PhosconStateTypeName =
   | 'ZHATemperature'
   | 'ZHAHumidity'
   | 'ZHAOpenClose'
-  // | 'ZHAAirQuality'
+  | 'ZHAAirQuality'
   | 'ZHASwitch'
   | 'On/Off plug-in unit'
 
@@ -42,78 +46,56 @@ export const SENSOR_TYPE_MAPPERS: Record<
     nameExtension: string
     measurementType: MeasurementType
     transformer: (state: PhosconState) => SensorReadingValueBaseType
-    mqttSensorReading: (name: string) => SensorReadingMqttData_base_class<SensorReadingValueBaseType, MeasurementType>
+    mqttSensorReading: (name: string) => SensorReadingMqttData_base_class<MeasurementType, SensorReadingValueBaseType>
   }
 > = {
   ZHALightLevel: {
     nameExtension: '_lumi',
     measurementType: 'illuminance',
-    transformer: state => (state as LightLevelState).lux,
-    mqttSensorReading: name =>
-      new SensorReadingMqttData_base_class<number, 'illuminance'>(
-        'illuminance',
-        name,
-        'phoscon',
-        new SensorValueTypeSettings('illuminance', 'Lux', 0),
-      ),
+    transformer: state => state['lux'] as number,
+    mqttSensorReading: name => new IlluminanceMqttData(name, 'phoscon'),
   },
   ZHAPresence: {
     nameExtension: '_pres',
     measurementType: 'presence',
-    transformer: state => {
-      const presenceValue = state as PresenceState
-      return presenceValue.presence ?? presenceValue.on ? 'present' : 'absent'
-    },
-    mqttSensorReading: name =>
-      new PresenceMqttData('presence', name, 'phoscon', new SensorValueTypeSettings('presence', '', undefined)),
+    transformer: state => (state['presence'] ?? state['presence'].on ? 'present' : 'absent'),
+    mqttSensorReading: name => new PresenceMqttData(name, 'phoscon'),
   },
   ZHATemperature: {
     nameExtension: '_temp',
     measurementType: 'temperature',
-    transformer: state => (state as TemperatureState).temperature / 100,
-    mqttSensorReading: name =>
-      new SensorReadingMqttData_base_class<number, 'temperature'>(
-        'temperature',
-        name,
-        'phoscon',
-        new SensorValueTypeSettings('temperature', '°C', 1),
-      ),
+    transformer: state => (state['temperature'] as number) / 100,
+    mqttSensorReading: name => new TemperatureMqttData(name, 'phoscon'),
   },
   ZHAHumidity: {
     nameExtension: '_humi',
     measurementType: 'humidity',
     transformer: state => (state as HumidityState).humidity / 100,
-    mqttSensorReading: name =>
-      new SensorReadingMqttData_base_class<number, 'humidity'>(
-        'humidity',
-        name,
-        'phoscon',
-        new SensorValueTypeSettings('humidity', '%rh', 1),
-      ),
+    mqttSensorReading: name => new HumidityMqttData(name, 'phoscon'),
   },
   ZHAOpenClose: {
     nameExtension: '_cnct',
     measurementType: 'contact',
     transformer: undefined,
-    mqttSensorReading: name =>
-      new OpenClosedMqttData('open-closed', name, 'phoscon', new SensorValueTypeSettings('open-closed', '', undefined)),
+    mqttSensorReading: name => new OpenClosedMqttData(name, 'phoscon'),
   },
   ZHASwitch: {
     nameExtension: '_sw',
     measurementType: 'switch',
-    transformer: state => {
-      const switchValue = state as SwitchState
-      return switchValue.buttonevent === 1002 ? 'shortpress' : undefined
-    },
-    mqttSensorReading: name =>
-      new SwitchMqttData('switch', name, 'phoscon', new SensorValueTypeSettings('switch', '', undefined)),
+    transformer: state => (state['buttonevent'] === 1002 ? 'shortpress' : undefined),
+    mqttSensorReading: name => new SwitchMqttData(name, 'phoscon'),
   },
   'On/Off plug-in unit': {
     nameExtension: '_cnct',
     measurementType: 'contact',
     transformer: undefined,
-    mqttSensorReading: name =>
-      new OnOffMqttData('on-off', name, 'phoscon', new SensorValueTypeSettings('on-off', '', undefined)),
+    mqttSensorReading: name => new OnOffMqttData(name, 'phoscon'),
+  },
+  ZHAAirQuality: {
+    nameExtension: '_airq',
+    measurementType: 'air-quality',
+    transformer: state => (state as HumidityState).humidity / 100,
+    mqttSensorReading: name => new HumidityMqttData(name, 'phoscon'),
   },
 }
 

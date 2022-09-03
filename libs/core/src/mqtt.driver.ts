@@ -5,6 +5,7 @@ import { LoggingService } from './logging.service'
 import handlebars from 'handlebars'
 import { SensorReading } from './sensor-reading.type'
 import { ActuatorCommand } from './actuator-types/actuator-command.type'
+import { SensorReadingValueBaseType } from './sensor-reading-mqtt-data-types/sensor-reading.base.class'
 
 export type CommandCallback = (actuatorName: string, command: ActuatorCommand) => void
 
@@ -55,7 +56,7 @@ export class MqttDriver {
     if (this._callback) this._callback(actuatorName, payload)
   }
 
-  public sendMeasurement(update: SensorReading<string | number>) {
+  public sendMeasurement(update: SensorReading<SensorReadingValueBaseType>) {
     if (this._outSensorReadingMqttTopicTemplate) {
       const mqttTopic = this._outSensorReadingMqttTopicTemplate({ sensorName: update.name, prefix: this._topicPrefix })
       // this._log.debug(`sending update to ${mqttTopic}`)

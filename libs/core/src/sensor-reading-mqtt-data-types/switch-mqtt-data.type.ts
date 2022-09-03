@@ -1,7 +1,11 @@
-import { SensorReadingMqttData_base_class } from './sensor-reading.base.class'
+import { SensorReadingMqttData_base_class, SensorValueTypeSettings } from './sensor-reading.base.class'
 
 export type SwitchPressed = {
   state: 'closed' | 'released' | 'shortpress' | 'longpress' | undefined
   pressDuration: number | undefined
 }
-export class SwitchMqttData extends SensorReadingMqttData_base_class<SwitchPressed, 'switch'> {}
+export class SwitchMqttData extends SensorReadingMqttData_base_class<'switch', SwitchPressed> {
+  constructor(name: string, origin: string) {
+    super('switch', name, origin, new SensorValueTypeSettings('switch', '', undefined))
+  }
+}

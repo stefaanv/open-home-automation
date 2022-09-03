@@ -1,6 +1,5 @@
 import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
-import { SensorReading } from '@core/sensor-reading.type'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import WebSocket from 'ws'
@@ -13,11 +12,7 @@ import { ActuatorType } from '@core/actuator-types/actuator.type'
 import { SensorConfig, SensorConfigBase } from '@core/device/sensor-config-base.class'
 import { regexExtract, regexTest } from '@core/configuration/helpers'
 import { DeviceList } from '@core/device/device-list.class'
-import {
-  SensorReadingValueBaseType,
-  SensorValueTypeSettings,
-} from '@core/sensor-reading-mqtt-data-types/sensor-reading.base.class'
-import { DeviceBase } from '@core/device/device-base.class'
+import { SensorReadingValueBaseType } from '@core/sensor-reading-mqtt-data-types/sensor-reading.base.class'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -25,14 +20,6 @@ const EVENT_URL = 'phoscon.general.eventUrl'
 const SENSOR_CONFIGURATION = 'phoscon.sensors'
 const ACTUATOR_CONFIGURATION = 'phoscon.actuators'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
-
-/*
-type GeneralConfig = {
-  "apiKey": string,
-  "baseUrl": string,
-  "eventUrl": string
-}
-*/
 
 @Injectable()
 export class PhosconInterfaceService {
@@ -172,6 +159,11 @@ export class PhosconInterfaceService {
       .filter(d => !regexTest(d.device.name, sensorConfig.ignore))
       .map(d => d.id)
 
+    this._ignoreIds = Object.keys(discoveredDevices)
+      .map(id => ({ id: parseInt(id), device: discoveredDevices[parseInt(id)] }))
+      .filter(d => regexTest(d.device.name, sensorConfig.ignore))
+      .map(d => d.id)
+
     for await (const id of ids) {
       // iterate over configuration received from the interface
       const discovered = discoveredDevices[id]
@@ -203,14 +195,24 @@ export class PhosconInterfaceService {
           const { nameExtension, measurementType, transformer, mqttSensorReading } = typeMap
           const name = sensorName + nameExtension
           const mqttValue = mqttSensorReading(name)
-          this._sensors.push({
+          const sensorMapper = {
             uid: id,
             config: discovered,
             name,
             mqttValue,
             transformer,
-          })
+          }
+          this._sensors.push(sensorMapper)
           this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
+
+          if (sensorMapper.transformer) {
+            // moet nog verdwijnen !!
+            mqttValue.update(sensorMapper.transformer(discovered.state))
+            console.log(mqttValue.toString())
+            this._mqttDriver.sendMeasurement(mqttValue.sensorReading)
+          } else {
+            console.error()
+          }
         }
       }
     }
@@ -234,29 +236,10 @@ export class PhosconInterfaceService {
         const state = payload.state
         const mapper = this._sensors.get(parseInt(payload.id))
         if (mapper) {
-          const value: SensorReadingValueBaseType = mapper.transformer(state)
           const mqttData = mapper.mqttValue
-          mqttData.update(value)
+          mqttData.update(mapper.transformer(state))
           console.log(mqttData.toString())
-          // const mearurementType = mapper.typeSettings.valueType
-          // this._log.debug(`${mapper.name} (${mearurementType}), value=${JSON.stringify(state)}`)
-          // const update = undefined
-          /*
-          if (valueMapper) {
-            const value: string | number = valueMapper.transformer(state)
-            const unit = valueMapper.unit
-            const formattedValue = valueMapper.formattedValue(value, unit)
-            const update = {
-              time: now,
-              type: mapper.measurementType,
-              name: mapper.name,
-              value,
-              formattedValue,
-              unit,
-              origin: 'phoscon',
-            } as SensorReading<string | number>
-        }
-            */
+          this._mqttDriver.sendMeasurement(mqttData.sensorReading)
           // this._mqttDriver.sendMeasurement(update)
           //  else {  //TODO hoort bij discovery
           //   this._log.warn(`Unknown measurement type ${mapper.typeSettings.valueType} full payload below`)

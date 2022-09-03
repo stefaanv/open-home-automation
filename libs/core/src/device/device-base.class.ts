@@ -13,6 +13,6 @@ export interface DeviceBase<
   readonly uid: TUID
   readonly name: string
   readonly config: TConfig
-  readonly mqttValue: SensorReadingMqttData_base_class<TValue, TValueTypeIndicator>
+  readonly mqttValue: SensorReadingMqttData_base_class<TValueTypeIndicator, TValue>
   transformer: (state: any) => TValue
 }

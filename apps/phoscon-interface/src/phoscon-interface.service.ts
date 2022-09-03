@@ -243,7 +243,7 @@ export class PhosconInterfaceService {
           this._log.debug(`${mapper.name} (${mapper.type}), value=${JSON.stringify(state)}`)
           const valueMapper = SENSOR_VALUE_MAPPERS[mapper.measurementType as MeasurementType]
           if (valueMapper) {
-            const value: string | number = valueMapper.transformer(state)
+            const value = valueMapper.transformer(state)
             const unit = valueMapper.unit
             const formattedValue = valueMapper.formattedValue(value, unit)
             const update = {

@@ -1,4 +1,5 @@
-import { MeasurementType } from "@core/measurement-types/measurement-type.type"
+import { MeasurementType } from '@core/measurement-types/measurement-type.type'
+import { SensorReading } from '@core/sensor-reading.type'
 
 export type SensorReadingValueBaseType = object | string | number | boolean | null
 export type ValueFormatter = (value: SensorReadingValueBaseType, unit: string) => string
@@ -8,12 +9,12 @@ export class SensorValueTypeSettings {
     readonly valueType: MeasurementType,
     readonly unit: string,
     readonly formatter: undefined | number | ValueFormatter,
-  ) { }
+  ) {}
 }
 
 export class SensorReadingMqttData_base_class<
-  TValue extends SensorReadingValueBaseType,
   TValueTypeIndicator extends string,
+  TValue extends SensorReadingValueBaseType,
 > {
   type: TValueTypeIndicator
   origin: string
@@ -23,12 +24,7 @@ export class SensorReadingMqttData_base_class<
   value: TValue
   valueTypeSettings: SensorValueTypeSettings
 
-  constructor(
-    type: TValueTypeIndicator,
-    name: string,
-    origin: string,
-    valueTypeSettings: SensorValueTypeSettings,
-  ) {
+  constructor(type: TValueTypeIndicator, name: string, origin: string, valueTypeSettings: SensorValueTypeSettings) {
     this.type = type
     this.name = name
     this.origin = origin
@@ -61,5 +57,9 @@ export class SensorReadingMqttData_base_class<
     }
 
     return JSON.stringify(data)
+  }
+
+  get sensorReading(): SensorReading<SensorReadingValueBaseType> {
+    return { ...this, unit: this.valueTypeSettings.unit, type: this.type as MeasurementType }
   }
 }

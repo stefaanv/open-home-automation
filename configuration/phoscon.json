@@ -5,7 +5,7 @@
     "eventUrl": "ws://192.168.0.10:443"
   },
   "sensors": {
-    "ignore": "(Range|Configuration|unknown|Daylight|Eethoek|On\\/Off|Presence|LightLevel|Temperature)[\\w\\s]*",
+    "ignore": "(Range|Configuration|unknown|Daylight|Eethoek|On\\/Off|Presence|LightLevel|Temperature|ronde)[\\w\\s]*",
     "discover": [
       {
         "filter": "(?<sensorName>[\\w:]+)_(multi|lumi|cnct|plug|switch)"
