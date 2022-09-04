@@ -12,16 +12,13 @@ export class SensorValueTypeSettings {
   ) {}
 }
 
-export class SensorReadingMqttData_base_class<
-  TValueTypeIndicator extends string,
-  TValue extends SensorReadingValueBaseType,
-> {
+export class SensorReadingMqttData_base_class<TValueTypeIndicator extends string> {
   type: TValueTypeIndicator
   origin: string
   time: Date
   name: string
   formattedValue: string
-  value: TValue
+  value: SensorReadingValueBaseType
   valueTypeSettings: SensorValueTypeSettings
 
   constructor(type: TValueTypeIndicator, name: string, origin: string, valueTypeSettings: SensorValueTypeSettings) {
@@ -31,7 +28,7 @@ export class SensorReadingMqttData_base_class<
     this.valueTypeSettings = valueTypeSettings
   }
 
-  update(value: TValue, time = new Date()) {
+  update(value: SensorReadingValueBaseType, time = new Date()) {
     this.value = value
     this.time = time
   }
@@ -39,15 +36,19 @@ export class SensorReadingMqttData_base_class<
   toString() {
     const formatter = this.valueTypeSettings.formatter
     let formattedValue = ''
-    switch (typeof formatter) {
-      case 'undefined': // no formatter defined for string type values
-        formattedValue = this.value as string
-        break
-      case 'number':
-        formattedValue = `${(this.value as number).toFixed(formatter)} ${this.valueTypeSettings.unit}`
-        break
-      case 'function':
-        formattedValue = formatter(this.value, this.valueTypeSettings.unit)
+    try {
+      switch (typeof formatter) {
+        case 'undefined': // no formatter defined for string type values
+          formattedValue = this.value as string
+          break
+        case 'number':
+          formattedValue = `${(this.value as number).toFixed(formatter)} ${this.valueTypeSettings.unit}`
+          break
+        case 'function':
+          formattedValue = formatter(this.value, this.valueTypeSettings.unit)
+      }
+    } catch (error) {
+      console.error(error)
     }
     const { valueTypeSettings: typeSettings, ...data } = {
       type: this.valueTypeSettings.valueType,

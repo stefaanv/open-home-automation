@@ -22,19 +22,13 @@ const SENSOR_CONFIGURATION = 'phoscon.sensors'
 const ACTUATOR_CONFIGURATION = 'phoscon.actuators'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
-type PhosconSensor = DeviceBase<number, PhosconSensorConfig, SensorReadingValueBaseType, MeasurementType>
+type PhosconSensor = DeviceBase<number, PhosconSensorConfig, MeasurementType>
 
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
   private readonly _actuators: (PhosconActuatorConfig & { actuatorType: ActuatorType })[] = []
-  private readonly _sensors = new DeviceList<
-    number,
-    PhosconSensorConfig,
-    PhosconState,
-    SensorReadingValueBaseType,
-    MeasurementType
-  >()
+  private readonly _sensors = new DeviceList<number, PhosconSensorConfig, MeasurementType>()
   private _ignoreIds: number[] = []
   private _processingStarted = false
   private readonly _axios: Axios

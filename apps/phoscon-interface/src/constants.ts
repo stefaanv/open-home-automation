@@ -46,7 +46,7 @@ export const SENSOR_TYPE_MAPPERS: Record<
     nameExtension: string
     measurementType: MeasurementType
     transformer: (state: PhosconState) => SensorReadingValueBaseType
-    mqttSensorReading: (name: string) => SensorReadingMqttData_base_class<MeasurementType, SensorReadingValueBaseType>
+    mqttSensorReading: (name: string) => SensorReadingMqttData_base_class<MeasurementType>
   }
 > = {
   ZHALightLevel: {
@@ -76,7 +76,7 @@ export const SENSOR_TYPE_MAPPERS: Record<
   ZHAOpenClose: {
     nameExtension: '_cnct',
     measurementType: 'contact',
-    transformer: undefined,
+    transformer: state => (state['open'] ? 'open' : 'closed'),
     mqttSensorReading: name => new OpenClosedMqttData(name, 'phoscon'),
   },
   ZHASwitch: {
@@ -88,7 +88,7 @@ export const SENSOR_TYPE_MAPPERS: Record<
   'On/Off plug-in unit': {
     nameExtension: '_cnct',
     measurementType: 'contact',
-    transformer: undefined,
+    transformer: state => (state['open'] ? 'on' : 'off'),
     mqttSensorReading: name => new OnOffMqttData(name, 'phoscon'),
   },
   ZHAAirQuality: {
