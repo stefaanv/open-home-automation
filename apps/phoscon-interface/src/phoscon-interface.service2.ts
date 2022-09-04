@@ -13,6 +13,7 @@ import { SensorConfig, SensorConfigBase } from '@core/device/sensor-config-base.
 import { regexExtract, regexTest } from '@core/configuration/helpers'
 import { DeviceList } from '@core/device/device-list.class'
 import { SensorReadingValueBaseType } from '@core/sensor-reading-mqtt-data-types/sensor-reading.base.class'
+import { DeviceBase } from '@core/device/device-base.class'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -20,6 +21,8 @@ const EVENT_URL = 'phoscon.general.eventUrl'
 const SENSOR_CONFIGURATION = 'phoscon.sensors'
 const ACTUATOR_CONFIGURATION = 'phoscon.actuators'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
+
+type PhosconSensor = DeviceBase<number, PhosconSensorConfig, SensorReadingValueBaseType, MeasurementType>
 
 @Injectable()
 export class PhosconInterfaceService {
@@ -53,10 +56,10 @@ export class PhosconInterfaceService {
     this._axios = axios.create({ baseURL: apiBaseUrl, responseType: 'json' })
 
     // Start sensor and actuator discovery
-    this.discover(_config)
+    this.configure()
   }
 
-  private async discover(config: ConfigService) {
+  private async configure() {
     await this.configureSensors()
     // await this.configureActuators(config)
     this._log.log(`configuration done, starting the listener`)
@@ -154,37 +157,31 @@ export class PhosconInterfaceService {
     const discoveredActuators = await this._axios.get<PhosconSensorConfig[]>('lights')
     const discoveredDevices = { ...discoveredSensors.data, ...discoveredActuators.data }
 
-    const ids = Object.keys(discoveredDevices)
-      .map(id => ({ id: parseInt(id), device: discoveredDevices[parseInt(id)] }))
-      .filter(d => !regexTest(d.device.name, sensorConfig.ignore))
-      .map(d => d.id)
+    // construct `selected` and `to ignore` id lists
+    const allIds = Object.keys(discoveredDevices).map(id => parseInt(id))
+    const selectedIds = allIds.filter(id => !regexTest(discoveredDevices[id].name, sensorConfig.ignore))
+    this._ignoreIds = allIds.filter(id => !selectedIds.some(i => i === id))
 
-    this._ignoreIds = Object.keys(discoveredDevices)
-      .map(id => ({ id: parseInt(id), device: discoveredDevices[parseInt(id)] }))
-      .filter(d => regexTest(d.device.name, sensorConfig.ignore))
-      .map(d => d.id)
-
-    for await (const id of ids) {
+    for await (const id of selectedIds) {
       // iterate over configuration received from the interface
       const discovered = discoveredDevices[id]
 
       // Get mapper info from configuration
       //TODO nog `instance` mapper implementeren
-      const mapper = sensorConfig.discover.find(
+      const mapperConfig = sensorConfig.discover.find(
         dm => regexTest(discovered.name, dm.filter),
         //TODO nog branch implementeren voor instance config
       )
 
-      if (!mapper) {
+      if (!mapperConfig) {
         // no mapping found -> configuration needs updating
         this._log.warn(
-          `NO mapping for sensor "${discovered.name}", type=${discovered.type}, model=${discovered.modelid} (id=${id})`,
+          `NO mapping in configuration for sensor "${discovered.name}", type=${discovered.type}, model=${discovered.modelid} (id=${id})`,
         )
         console.log(JSON.stringify(discovered))
       } else {
         // mapping available -> create the sensor
-        const sensorName = regexExtract(discovered.name, mapper.filter, 'sensorName')
-
+        const sensorName = regexExtract(discovered.name, mapperConfig.filter, 'sensorName')
         //convert zigbee types into AHO measurement types
         const typeMap = SENSOR_TYPE_MAPPERS[discovered.type ?? 'On/Off plug-in unit']
         if (!typeMap) {
@@ -205,21 +202,15 @@ export class PhosconInterfaceService {
           this._sensors.push(sensorMapper)
           this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
 
-          if (sensorMapper.transformer) {
-            // moet nog verdwijnen !!
-            mqttValue.update(sensorMapper.transformer(discovered.state))
-            console.log(mqttValue.toString())
-            this._mqttDriver.sendMeasurement(mqttValue.sensorReading)
-          } else {
-            console.error()
-          }
+          // Process initial state
+          this.wsEventHandler({ data: JSON.stringify({ ...discovered, id }) })
         }
       }
     }
   }
 
   // Phoscon SSE link event handler
-  private wsEventHandler(event: WebSocket.MessageEvent) {
+  private wsEventHandler(event: WebSocket.MessageEvent | { data: string }) {
     if (!this._processingStarted) {
       this._log.log(`processing of Phoscon events started`)
       this._processingStarted = true
@@ -237,7 +228,11 @@ export class PhosconInterfaceService {
         const mapper = this._sensors.get(parseInt(payload.id))
         if (mapper) {
           const mqttData = mapper.mqttValue
-          mqttData.update(mapper.transformer(state))
+          if (mapper.transformer) {
+            mqttData.update(mapper.transformer(state))
+          } else {
+            this._log.warn(`Transformer not defined for mapper ${mapper.name}`)
+          }
           console.log(mqttData.toString())
           this._mqttDriver.sendMeasurement(mqttData.sensorReading)
           // this._mqttDriver.sendMeasurement(update)
