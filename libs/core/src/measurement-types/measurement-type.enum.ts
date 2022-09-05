@@ -1,4 +1,4 @@
-export type MeasurementType =
+export type MeasurementTypeEnum =
   | 'temperature'
   | 'humidity'
   | 'switch'

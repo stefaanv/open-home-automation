@@ -4,10 +4,10 @@ import * as mqtt from 'async-mqtt'
 import { LoggingService } from './logging.service'
 import handlebars from 'handlebars'
 import { SensorReading } from './sensor-reading.type'
-import { ActuatorCommand } from './actuator-types/actuator-command.type'
 import { SensorReadingValueBaseType } from './sensor-reading-mqtt-data-types/sensor-reading.base.class'
+import { ActuatorCommandBaseClass } from './actuator-types/actuator-command.type'
 
-export type CommandCallback = (actuatorName: string, command: ActuatorCommand) => void
+export type CommandCallback = (actuatorName: string, command: ActuatorCommandBaseClass) => void
 
 @Injectable()
 export class MqttDriver {
@@ -49,7 +49,7 @@ export class MqttDriver {
   }
 
   private mqttReceived(topic: string, message: Buffer) {
-    const payload: ActuatorCommand = JSON.parse(message.toString('utf-8'))
+    const payload: ActuatorCommandBaseClass = JSON.parse(message.toString('utf-8'))
     const actuatorName = this._actuatorNameExtractor.exec(topic).groups['actuatorName']
     // this._log.debug(`received from ${topic} ${JSON.stringify(payload)}`)
 

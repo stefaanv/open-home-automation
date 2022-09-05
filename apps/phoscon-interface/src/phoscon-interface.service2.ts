@@ -5,15 +5,14 @@ import { ConfigService } from '@nestjs/config'
 import WebSocket from 'ws'
 import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
-import { PhosconActuatorConfig, PhosconEvent, PhosconSensorConfig, PhosconState } from './types'
+import { PhosconActuatorDiscoveryItem, PhosconEvent, PhosconSensorDiscoveryItem, PhosconState } from './phoscon-type'
 import { ActuatorSwitchCommand, ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
-import { MeasurementType } from '@core/measurement-types/measurement-type.type'
-import { ActuatorType } from '@core/actuator-types/actuator.type'
-import { SensorConfig, SensorConfigBase } from '@core/device/sensor-config-base.class'
+import { MeasurementTypeEnum } from '@core/measurement-types/measurement-type.enum'
 import { regexExtract, regexTest } from '@core/configuration/helpers'
-import { DeviceList } from '@core/device/device-list.class'
-import { SensorReadingValueBaseType } from '@core/sensor-reading-mqtt-data-types/sensor-reading.base.class'
-import { DeviceBase } from '@core/device/device-base.class'
+import { SensorBaseClass } from '@core/configuration/sensors/sensor-base.class'
+import { CommandType } from '@core/command-types/actuator-command.type'
+import { DeviceList } from '@core/configuration/sensors/sensor-list.class'
+import { SensorConfig, SensorConfigBase } from '@core/configuration/sensors/sensor-config-base.class'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -22,13 +21,16 @@ const SENSOR_CONFIGURATION = 'phoscon.sensors'
 const ACTUATOR_CONFIGURATION = 'phoscon.actuators'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
-type PhosconSensor = DeviceBase<number, PhosconSensorConfig, MeasurementType>
+type PhosconSensor = SensorBaseClass<number, PhosconSensorDiscoveryItem>
+type PhosconInstanceSensorDefinition = {
+  uuid: string
+}
 
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
-  private readonly _actuators: (PhosconActuatorConfig & { actuatorType: ActuatorType })[] = []
-  private readonly _sensors = new DeviceList<number, PhosconSensorConfig, MeasurementType>()
+  private readonly _actuators = new DeviceList<number, PhosconActuatorDiscoveryItem>()
+  private readonly _sensors = new DeviceList<number, SensorBaseClass<number, PhosconSensorDiscoveryItem>>()
   private _ignoreIds: number[] = []
   private _processingStarted = false
   private readonly _axios: Axios
@@ -55,7 +57,7 @@ export class PhosconInterfaceService {
 
   private async configure() {
     await this.configureSensors()
-    // await this.configureActuators(config)
+    await this.configureActuators()
     this._log.log(`configuration done, starting the listener`)
 
     // Start the sensors readout
@@ -66,89 +68,93 @@ export class PhosconInterfaceService {
     ws.onmessage = (event: WebSocket.MessageEvent) => this.wsEventHandler(event)
   }
 
-  /*  private async configureActuators(config: ConfigService) {
-      // configuration pre-processing
-      const actuatorMapperConfig = this._config.get<ActuatorMapperConfig[]>(ACTUATOR_MAPPER_KEY, [])
-      if (!actuatorMapperConfig) this._log.warn(ACTUATOR_MAPPER_KEY + EMPTY_ERROR_MSG)
-  
-      // Turn strings into regex'es
-      actuatorMapperConfig.forEach(amc => {
-        if (amc.type === 'generic') {
-          amc.nameFilter = new RegExp(amc.nameFilter)
+  private async configureActuators() {
+    // configuration pre-processing
+    const actuatorConfigRaw =
+      this._config.get<ActuatorConfigBase<string, PhosconInstanceSensorDefinition>>(ACTUATOR_CONFIGURATION)
+    // if (!actuatorConfigRaw) this._log.warn(ACTUATOR_CONFIGURATION + EMPTY_ERROR_MSG)
+    // const actuatorConfig = new ActuatorConfig(actuatorConfigRaw)
+    /*
+
+    // Turn strings into regex'es
+    actuatorConfig.forEach(amc => {
+      if (amc.type === 'generic') {
+        amc.nameFilter = new RegExp(amc.nameFilter)
+      } else {
+        //TODO nog implementeren
+      }
+    })
+
+    // discover actuators information from phoscon
+    const ignoreFilter = new RegExp(config.get<string>(ACTUATOR_IGNORE_KEY))
+    const actuators = await this._axios.get<Record<string, PhosconActuatorDiscoveryItem>>('lights')
+    const ids = Object.keys(actuators.data).map(id => parseInt(id))
+
+    // process the received actuator info
+    for await (const id of ids) {
+      // extract actuator ID
+      const actuatorInfo = actuators.data[id]
+
+      // Ignore if the name is in the ignore list
+      if (regexTest(actuatorInfo.name, ignoreFilter)) {
+        this._log.debug(`Ignoring sensor "${actuatorInfo.name}"`)
+        continue
+      }
+
+      // Get mapper info from (pre=precessed) configuration
+      const actuatorMapper = actuatorConfig.find(
+        amc => (amc.type === 'generic' ? regexTest(actuatorInfo.name, amc.nameFilter as RegExp) : false),
+        //TODO nog branch implementeren voor instance config
+      )
+
+      if (!actuatorMapper) {
+        // no mapping found -> configuration needs updating
+        const msg = `NO mapping for actuator "${actuatorInfo.name}", type=${actuatorInfo.type}, model=${actuatorInfo.modelid} (id=${id})`
+        this._log.warn(msg)
+        console.log(JSON.stringify(actuatorInfo))
+      } else {
+        // mapping available -> create the actuator
+        const actuatorName =
+          actuatorMapper.type === 'generic'
+            ? regexExtract(actuatorInfo.name, actuatorMapper.nameFilter as RegExp, 'actuatorName')
+            : actuatorMapper.name
+
+        //convert zigbee types into AHO command types
+        const typeMap = ACTUATOR_TYPE_MAPPERS[actuatorInfo.type]
+        if (!typeMap) {
+          // actuator type not known -> this program needs updating
+          this._log.warn(`Unknown actuator type ${actuatorInfo.type}, full payload below`)
+          console.log(actuatorInfo)
         } else {
-          //TODO nog implementeren
-        }
-      })
-  
-      // discover actuators information from phoscon
-      const ignoreFilter = new RegExp(config.get<string>(ACTUATOR_IGNORE_KEY))
-      const actuators = await this._axios.get<Record<string, PhosconActuatorConfig>>('lights')
-      const ids = Object.keys(actuators.data).map(id => parseInt(id))
-  
-      // process the received actuator info
-      for await (const id of ids) {
-        // extract actuator ID
-        const actuatorInfo = actuators.data[id]
-  
-        // Ignore if the name is in the ignore list
-        if (regexTest(actuatorInfo.name, ignoreFilter)) {
-          this._log.debug(`Ignoring sensor "${actuatorInfo.name}"`)
-          continue
-        }
-  
-        // Get mapper info from (pre=precessed) configuration
-        const actuatorMapper = actuatorMapperConfig.find(
-          amc => (amc.type === 'generic' ? regexTest(actuatorInfo.name, amc.nameFilter as RegExp) : false),
-          //TODO nog branch implementeren voor instance config
-        )
-  
-        if (!actuatorMapper) {
-          // no mapping found -> configuration needs updating
-          const msg = `NO mapping for actuator "${actuatorInfo.name}", type=${actuatorInfo.type}, model=${actuatorInfo.modelid} (id=${id})`
-          this._log.warn(msg)
-          console.log(JSON.stringify(actuatorInfo))
-        } else {
-          // mapping available -> create the actuator
-          const actuatorName =
-            actuatorMapper.type === 'generic'
-              ? regexExtract(actuatorInfo.name, actuatorMapper.nameFilter as RegExp, 'actuatorName')
-              : actuatorMapper.name
-  
-          //convert zigbee types into AHO command types
-          const typeMap = ACTUATOR_TYPE_MAPPERS[actuatorInfo.type]
-          if (!typeMap) {
-            // actuator type not known -> this program needs updating
-            this._log.warn(`Unknown actuator type ${actuatorInfo.type}, full payload below`)
-            console.log(actuatorInfo)
-          } else {
-            const [nameExtension, commandType] = typeMap
-            this._actuators[id] = {
-              ...actuatorInfo,
-              actuatorType: commandType,
-              name: actuatorName + nameExtension,
-            }
-            this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${commandType} (id=${id})`)
+          const [nameExtension, commandType] = typeMap
+          this._actuators[id] = {
+            ...actuatorInfo,
+            actuatorType: commandType,
+            name: actuatorName + nameExtension,
           }
+          this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${commandType} (id=${id})`)
         }
       }
-      const commandTemplate = Handlebars.compile(config.get<string>('mqtt.commandTemplate'))
-      const prefix = config.get<string>('mqtt.topicPrefix')
-      const mqttTopics = Object.values(this._actuators).map<string>(a =>
-        commandTemplate({ prefix, actuatorName: a.name }),
-      )
-      this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
     }
+    const commandTemplate = Handlebars.compile(config.get<string>('mqtt.commandTemplate'))
+    const prefix = config.get<string>('mqtt.topicPrefix')
+    const mqttTopics = Object.values(this._actuators).map<string>(a =>
+      commandTemplate({ prefix, actuatorName: a.name }),
+    )
+    this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
     */
+  }
 
   private async configureSensors() {
     // configuration pre-processing
-    const sensorConfigRaw = this._config.get<SensorConfigBase<string>>(SENSOR_CONFIGURATION)
+    const sensorConfigRaw =
+      this._config.get<SensorConfigBase<string, PhosconInstanceSensorDefinition>>(SENSOR_CONFIGURATION)
     if (!sensorConfigRaw) this._log.warn(SENSOR_CONFIGURATION + EMPTY_ERROR_MSG)
-    const sensorConfig = new SensorConfig(sensorConfigRaw)
+    const sensorConfig = new SensorConfig<any>(sensorConfigRaw)
 
     // discover sensor and actuators information from phoscon
-    const discoveredSensors = await this._axios.get<PhosconSensorConfig[]>('sensors')
-    const discoveredActuators = await this._axios.get<PhosconSensorConfig[]>('lights')
+    const discoveredSensors = await this._axios.get<PhosconSensorDiscoveryItem[]>('sensors')
+    const discoveredActuators = await this._axios.get<PhosconSensorDiscoveryItem[]>('lights')
     const discoveredDevices = { ...discoveredSensors.data, ...discoveredActuators.data }
 
     // construct `selected` and `to ignore` id lists
@@ -156,6 +162,7 @@ export class PhosconInterfaceService {
     const selectedIds = allIds.filter(id => !regexTest(discoveredDevices[id].name, sensorConfig.ignore))
     this._ignoreIds = allIds.filter(id => !selectedIds.some(i => i === id))
 
+    // Sensor discovery
     for await (const id of selectedIds) {
       // iterate over configuration received from the interface
       const discovered = discoveredDevices[id]
@@ -192,7 +199,7 @@ export class PhosconInterfaceService {
             name,
             mqttValue,
             transformer,
-          }
+          } as SensorBaseClass<number, PhosconSensorDiscoveryItem>
           this._sensors.push(sensorMapper)
           this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
 
@@ -201,6 +208,9 @@ export class PhosconInterfaceService {
         }
       }
     }
+
+    // Add instance sensors from config
+    // for await (const )
   }
 
   // Phoscon SSE link event handler
@@ -247,10 +257,12 @@ export class PhosconInterfaceService {
     }
   }
 
+  /*
   private mqttCallback(actuatorName: string, data: any) {
     //TODO handle messages received from MQTT
     const actuatorId = this._actuators.findIndex(a => a?.name === actuatorName)
     const actuator = this._actuators[actuatorId]
     this._axios.put(`lights/${actuatorId}/state`, { on: (data as ActuatorSwitchCommand).switch === 'on' })
   }
+  */
 }

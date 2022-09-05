@@ -1,19 +1,12 @@
-import { MeasurementType } from '@core/measurement-types/measurement-type.type'
+import { MeasurementTypeEnum } from '@core/measurement-types/measurement-type.enum'
 import { SensorReading } from '@core/sensor-reading.type'
+import { SensorValueTypeSettings } from '@core/configuration/sensors/SensorValueTypeSettings.class'
 
 export type SensorReadingValueBaseType = object | string | number | boolean | null
 export type ValueFormatter = (value: SensorReadingValueBaseType, unit: string) => string
 
-export class SensorValueTypeSettings {
-  constructor(
-    readonly valueType: MeasurementType,
-    readonly unit: string,
-    readonly formatter: undefined | number | ValueFormatter,
-  ) {}
-}
-
-export class SensorReadingMqttData_base_class<TValueTypeIndicator extends string> {
-  type: TValueTypeIndicator
+export class SensorReadingMqttDataBaseClass {
+  type: MeasurementTypeEnum
   origin: string
   time: Date
   name: string
@@ -21,7 +14,7 @@ export class SensorReadingMqttData_base_class<TValueTypeIndicator extends string
   value: SensorReadingValueBaseType
   valueTypeSettings: SensorValueTypeSettings
 
-  constructor(type: TValueTypeIndicator, name: string, origin: string, valueTypeSettings: SensorValueTypeSettings) {
+  constructor(type: MeasurementTypeEnum, name: string, origin: string, valueTypeSettings: SensorValueTypeSettings) {
     this.type = type
     this.name = name
     this.origin = origin
@@ -61,6 +54,6 @@ export class SensorReadingMqttData_base_class<TValueTypeIndicator extends string
   }
 
   get sensorReading(): SensorReading<SensorReadingValueBaseType> {
-    return { ...this, unit: this.valueTypeSettings.unit, type: this.type as MeasurementType }
+    return { ...this, unit: this.valueTypeSettings.unit, type: this.type as MeasurementTypeEnum }
   }
 }

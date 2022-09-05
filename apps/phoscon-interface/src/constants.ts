@@ -1,5 +1,5 @@
-import { ActuatorType } from '@core/actuator-types/actuator.type'
-import { MeasurementType } from '@core/measurement-types/measurement-type.type'
+import { CommandTypeEnum } from '@core/command-types/command-type.enum'
+import { MeasurementTypeEnum } from '@core/measurement-types/measurement-type.enum'
 import {
   HumidityMqttData,
   IlluminanceMqttData,
@@ -9,9 +9,8 @@ import { OnOffMqttData } from '@core/sensor-reading-mqtt-data-types/on-off-mqtt-
 import { OpenClosedMqttData } from '@core/sensor-reading-mqtt-data-types/open-close-mqtt-data.type'
 import { PresenceMqttData } from '@core/sensor-reading-mqtt-data-types/presence-mqtt-data.type'
 import {
-  SensorReadingMqttData_base_class,
+  SensorReadingMqttDataBaseClass,
   SensorReadingValueBaseType,
-  SensorValueTypeSettings,
 } from '@core/sensor-reading-mqtt-data-types/sensor-reading.base.class'
 import { SwitchMqttData } from '@core/sensor-reading-mqtt-data-types/switch-mqtt-data.type'
 import {
@@ -24,7 +23,7 @@ import {
   PresenceState,
   SwitchState,
   TemperatureState,
-} from './types'
+} from './phoscon-type'
 
 export type PhosconStateTypeName =
   | 'ZHAPresence'
@@ -44,9 +43,9 @@ export const SENSOR_TYPE_MAPPERS: Record<
   PhosconStateTypeName,
   {
     nameExtension: string
-    measurementType: MeasurementType
+    measurementType: MeasurementTypeEnum
     transformer: (state: PhosconState) => SensorReadingValueBaseType
-    mqttSensorReading: (name: string) => SensorReadingMqttData_base_class<MeasurementType>
+    mqttSensorReading: (name: string) => SensorReadingMqttDataBaseClass
   }
 > = {
   ZHALightLevel: {
@@ -99,12 +98,12 @@ export const SENSOR_TYPE_MAPPERS: Record<
   },
 }
 
-export const ACTUATOR_TYPE_MAPPERS: Record<string, [string, ActuatorType]> = {
+export const ACTUATOR_TYPE_MAPPERS: Record<string, [string, CommandTypeEnum]> = {
   'On/Off plug-in unit': ['_relay', 'on-off'],
 }
 
 export const SENSOR_VALUE_MAPPERS: Record<
-  MeasurementType,
+  MeasurementTypeEnum,
   {
     transformer: (state: PhosconState) => any
     unit: string

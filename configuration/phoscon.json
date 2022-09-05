@@ -10,7 +10,9 @@
       {
         "filter": "(?<sensorName>[\\w:]+)_(multi|lumi|cnct|plug|switch)"
       }
-    ]
+    ], 
+    "define":{
+    }
   },
   "actuators": {
     "ignore": "(Range|Configuration|On\\/Off|Eethoek)[\\w\\s]*",

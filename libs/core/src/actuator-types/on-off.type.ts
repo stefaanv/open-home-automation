@@ -1,1 +1,1 @@
-export type OnOffCommand = ('on' | 'off') & { type: 'on-off' }
+export type OnOffCommand = 'on' | 'off'

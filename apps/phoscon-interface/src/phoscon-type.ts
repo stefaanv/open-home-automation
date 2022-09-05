@@ -9,7 +9,8 @@ export type PhosconEvent = {
   uniqueid: string
 }
 
-export type PhosconSensorConfig = {
+export type PhosconSensorDiscoveryItem = {
+  uid: number
   config: any
   ep: number
   etag: string
@@ -24,7 +25,8 @@ export type PhosconSensorConfig = {
 }
 
 export type PhosconActuatorType = ''
-export type PhosconActuatorConfig = {
+export type PhosconActuatorDiscoveryItem = {
+  uid: number
   etag: string
   hascolor: boolean
   manufacturer: string

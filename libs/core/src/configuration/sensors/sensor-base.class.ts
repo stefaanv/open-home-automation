@@ -1,15 +1,15 @@
 import {
-  SensorReadingMqttData_base_class,
+  SensorReadingMqttDataBaseClass,
   SensorReadingValueBaseType,
 } from '@core/sensor-reading-mqtt-data-types/sensor-reading.base.class'
 
 /** specifieke sensor of actuator */
-export class DeviceBase<TUID extends number | string, TConfig, TValueTypeIndicator extends string> {
+export class SensorBaseClass<TUID extends number | string, TConfig> {
   constructor(
     readonly uid: TUID,
     readonly name: string,
     readonly config: TConfig,
-    readonly mqttValue: SensorReadingMqttData_base_class<TValueTypeIndicator>,
+    readonly mqttValue: SensorReadingMqttDataBaseClass,
     readonly transformer: (state: any) => SensorReadingValueBaseType,
   ) {}
 }

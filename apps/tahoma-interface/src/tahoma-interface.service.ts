@@ -5,9 +5,9 @@ import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
 import Handlebars from 'handlebars'
 import https from 'https'
-import { ActuatorCommand } from '@core/actuator-types/actuator-command.type'
+import { CommandType } from '@core/actuator-types/actuator-command.type'
 import { RollerShutterActions, RollerShutterCommand } from '@core/actuator-types/roller-shutter.type'
-import { MeasurementType } from '@core/measurement-types/measurement-type.type'
+import { MeasurementTypeEnum } from '@core/measurement-types/measurement-type.enum'
 import { SensorReading } from '@core/sensor-reading.type'
 import { Numeric } from '@core/measurement-types/numeric.type'
 
@@ -18,10 +18,10 @@ type SomfyDevice = {
   available: boolean
   type: number
   controllableName:
-  | 'io:RollerShutterGenericIOComponent'
-  | 'io:VerticalExteriorAwningIOComponent'
-  | 'io:StackComponent'
-  | 'io:LightIOSystemSensor'
+    | 'io:RollerShutterGenericIOComponent'
+    | 'io:VerticalExteriorAwningIOComponent'
+    | 'io:StackComponent'
+    | 'io:LightIOSystemSensor'
 }
 
 type SomfyEvent = {
@@ -144,7 +144,7 @@ export class TahomaInterfaceService {
     const name = sensorName ?? actuatorName
     if (name && event.name === 'DeviceStateChangedEvent') {
       event.deviceStates.forEach(ds => {
-        let type: MeasurementType
+        let type: MeasurementTypeEnum
         let value = ds.value as number
         let unit: string = ''
         let formattedValue: string
@@ -184,7 +184,7 @@ export class TahomaInterfaceService {
     }
   }
 
-  private mqttCallback(actuatorName: string, cmd: ActuatorCommand) {
+  private mqttCallback(actuatorName: string, cmd: CommandType) {
     //TODO handle messages received from MQTT
     const actuator = this._actuators[actuatorName]
     if (!actuator) {
