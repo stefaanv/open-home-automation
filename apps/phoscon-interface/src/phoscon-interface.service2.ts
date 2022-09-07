@@ -9,10 +9,13 @@ import { PhosconActuatorDiscoveryItem, PhosconEvent, PhosconSensorDiscoveryItem,
 import { ActuatorSwitchCommand, ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-types/measurement-type.enum'
 import { regexExtract, regexTest } from '@core/configuration/helpers'
-import { SensorBaseClass } from '@core/configuration/sensors/sensor-base.class'
 import { CommandType } from '@core/command-types/actuator-command.type'
-import { DeviceList } from '@core/configuration/sensors/sensor-list.class'
 import { SensorConfig, SensorConfigBase } from '@core/configuration/sensors/sensor-config-base.class'
+import { DeviceList } from '@core/configuration/device-list.class'
+import { CommandTypeEnum } from '@core/command-types/command-type.enum'
+import { SensorReadingMqttDataBaseClass } from '@core/sensor-reading-mqtt-data-types/sensor-reading.base.class'
+import { ActuatorConfigBase } from '@core/configuration/actuators/actuator-config.class'
+import { DeviceBase } from '@core/configuration/device-base.class'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -21,7 +24,6 @@ const SENSOR_CONFIGURATION = 'phoscon.sensors'
 const ACTUATOR_CONFIGURATION = 'phoscon.actuators'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
-type PhosconSensor = SensorBaseClass<number, PhosconSensorDiscoveryItem>
 type PhosconInstanceSensorDefinition = {
   uuid: string
 }
@@ -29,8 +31,13 @@ type PhosconInstanceSensorDefinition = {
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
-  private readonly _actuators = new DeviceList<number, PhosconActuatorDiscoveryItem>()
-  private readonly _sensors = new DeviceList<number, SensorBaseClass<number, PhosconSensorDiscoveryItem>>()
+  private readonly _actuators = new DeviceList<number, CommandTypeEnum, PhosconActuatorDiscoveryItem, CommandType>()
+  private readonly _sensors = new DeviceList<
+    number,
+    MeasurementTypeEnum,
+    PhosconSensorDiscoveryItem,
+    SensorReadingMqttDataBaseClass
+  >()
   private _ignoreIds: number[] = []
   private _processingStarted = false
   private readonly _axios: Axios
@@ -71,7 +78,7 @@ export class PhosconInterfaceService {
   private async configureActuators() {
     // configuration pre-processing
     const actuatorConfigRaw =
-      this._config.get<ActuatorConfigBase<string, PhosconInstanceSensorDefinition>>(ACTUATOR_CONFIGURATION)
+      this._config.get<ActuatorConfigBase<string, CommandTypeEnum>>(ACTUATOR_CONFIGURATION)
     // if (!actuatorConfigRaw) this._log.warn(ACTUATOR_CONFIGURATION + EMPTY_ERROR_MSG)
     // const actuatorConfig = new ActuatorConfig(actuatorConfigRaw)
     /*
@@ -197,10 +204,15 @@ export class PhosconInterfaceService {
             uid: id,
             config: discovered,
             name,
-            mqttValue,
+            type: measurementType
             transformer,
-          } as SensorBaseClass<number, PhosconSensorDiscoveryItem>
-          this._sensors.push(sensorMapper)
+          } as DeviceBase<
+          number,
+          MeasurementTypeEnum,
+          PhosconSensorDiscoveryItem,
+          SensorReadingMqttDataBaseClass
+        >
+          this._sensors.push({})
           this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
 
           // Process initial state
