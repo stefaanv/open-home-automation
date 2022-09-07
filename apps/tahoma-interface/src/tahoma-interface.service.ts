@@ -7,7 +7,7 @@ import Handlebars from 'handlebars'
 import https from 'https'
 import { CommandType } from '@core/actuator-types/actuator-command.type'
 import { RollerShutterActions, RollerShutterCommand } from '@core/actuator-types/roller-shutter.type'
-import { MeasurementTypeEnum } from '@core/measurement-types/measurement-type.enum'
+import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReading } from '@core/sensor-reading.type'
 import { Numeric } from '@core/measurement-types/numeric.type'
 

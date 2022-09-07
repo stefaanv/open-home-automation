@@ -1,4 +1,4 @@
-import { MeasurementTypeEnum } from '@core/measurement-types/measurement-type.enum'
+import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { ValueFormatter } from '@core/sensor-reading-mqtt-data-types/sensor-reading.base.class'
 
 export class SensorValueTypeSettings {

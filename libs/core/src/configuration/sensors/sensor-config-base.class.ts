@@ -1,4 +1,4 @@
-import { MeasurementTypeEnum } from '@core/measurement-types/measurement-type.enum'
+import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 
 export class SensorConfigBase<T extends string | RegExp, TInstanceDef> {
   ignore: T

@@ -1,5 +1,5 @@
 import { CommandTypeEnum } from '@core/command-types/command-type.enum'
-import { MeasurementTypeEnum } from '@core/measurement-types/measurement-type.enum'
+import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import {
   HumidityMqttData,
   IlluminanceMqttData,

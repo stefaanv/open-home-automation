@@ -1,3 +1,5 @@
+export type SensorReadingValue = Numeric | OnOff | OpenClosed | Presence | SwitchPressed
+
 export type Numeric = {
   type: 'numeric'
   value: number

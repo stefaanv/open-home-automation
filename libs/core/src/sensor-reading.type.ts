@@ -1,12 +1,10 @@
-import { MeasurementTypeEnum } from './measurement-types/measurement-type.enum'
-import { SensorReadingValueBaseType } from './sensor-reading-mqtt-data-types/sensor-reading.base.class'
+import { MeasurementTypeEnum } from './measurement-type.enum'
+import { SensorReadingValue } from './sensor-reading-data-types'
 
-export type SensorReading<T extends SensorReadingValueBaseType> = {
+export type SensorReading<TValue extends SensorReadingValue> = {
   origin: string
   time: Date
   type: MeasurementTypeEnum
   name: string
-  value: T
-  unit: string
-  formattedValue: string
+  value: TValue
 }
