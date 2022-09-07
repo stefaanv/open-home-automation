@@ -1,8 +1,20 @@
-import { ActuatorConfigBase } from './actuators/actuator-config.class'
-import { SensorConfigBase } from './sensors/sensor-config-base.class'
+import { ChannelConfigBase } from './channel-config-base.class'
 
-export interface InterfaceConfiguration<G, U, V> {
-  general: G
-  sensors: SensorConfigBase<string, U>
-  actuators: ActuatorConfigBase<string, V>
+/**
+ * TGeneral: vorm van de algemene (General) config
+ * TSensorTypes: Lijst van mogelijk waarden voor sensor type
+ * TSensorChannelDef: vorm van individuele sensor channel definitie
+ * TActuatorTypes: Lijst mogelijke waarden actuator type
+ * TActuatorChannelDef: vorm actuator channel definitie
+ */
+export interface InterfaceConfiguration<
+  TGeneral,
+  TSensorTypes,
+  TSensorChannelDef,
+  TActuatorTypes,
+  TActuatorChannelDef,
+> {
+  general: TGeneral
+  sensors: ChannelConfigBase<string, TSensorTypes, TSensorChannelDef>
+  actuators: ChannelConfigBase<string, TActuatorTypes, TActuatorChannelDef>
 }

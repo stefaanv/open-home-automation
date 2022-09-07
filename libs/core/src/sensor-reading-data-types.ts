@@ -1,17 +1,17 @@
+import { NumericTypeEnum } from './measurement-type.enum'
+
 export type SensorReadingValue = Numeric | OnOff | OpenClosed | Presence | SwitchPressed
 
 export type Numeric = {
-  type: 'numeric'
   value: number
   unit: string
   formattedValue: string
 }
 
-export type OnOff = ('on' | 'off' | undefined) & { type: 'on-off' }
-export type OpenClosed = ('open' | 'closed' | undefined) & { type: 'open-closed' }
-export type Presence = ('present' | 'absent' | undefined) & { type: 'presence' }
+export type OnOff = 'on' | 'off' | undefined
+export type OpenClosed = 'open' | 'closed' | undefined
+export type Presence = 'present' | 'absent' | undefined
 export type SwitchPressed = {
-  type: 'switch-pressed'
   state: 'closed' | 'released' | 'shortpress' | 'longpress' | undefined
   pressDuration: number | undefined
 }

@@ -9,10 +9,12 @@ import { PhosconActuatorDiscoveryItem, PhosconEvent, PhosconSensorDiscoveryItem,
 import { ActuatorSwitchCommand, ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { regexExtract, regexTest } from '@core/configuration/helpers'
-import { SensorBaseClass } from '@core/configuration/sensors/sensor-base.class'
+import { Channel, ChannelList } from '@core/channel-list.class'
 import { CommandType } from '@core/command-types/actuator-command.type'
-import { DeviceList } from '@core/configuration/sensors/sensor-list.class'
-import { SensorConfig, SensorConfigBase } from '@core/configuration/sensors/sensor-config-base.class'
+import { ChannelConfig, ChannelConfigBase } from '@core/configuration/channel-config-base.class'
+import { SensorReadingValue } from '@core/sensor-reading-data-types'
+import { CommandTypeEnum } from '@core/command-types/command-type.enum'
+import { SensorReading } from '@core/sensor-reading.type'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -21,16 +23,14 @@ const SENSOR_CONFIGURATION = 'phoscon.sensors'
 const ACTUATOR_CONFIGURATION = 'phoscon.actuators'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
-type PhosconSensor = SensorBaseClass<number, PhosconSensorDiscoveryItem>
-type PhosconInstanceSensorDefinition = {
-  uuid: string
-}
+type SensorChannel = Channel<number, MeasurementTypeEnum, SensorReadingValue>
+type ActuatorChannel = Channel<number, CommandTypeEnum, CommandType>
 
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
-  private readonly _actuators = new DeviceList<number, PhosconActuatorDiscoveryItem>()
-  private readonly _sensors = new DeviceList<number, SensorBaseClass<number, PhosconSensorDiscoveryItem>>()
+  private readonly _sensorChannels = new ChannelList<number, SensorChannel>()
+  private readonly _actuatorChannels = new ChannelList<number, ActuatorChannel>()
   private _ignoreIds: number[] = []
   private _processingStarted = false
   private readonly _axios: Axios
@@ -70,8 +70,8 @@ export class PhosconInterfaceService {
 
   private async configureActuators() {
     // configuration pre-processing
-    const actuatorConfigRaw =
-      this._config.get<ActuatorConfigBase<string, PhosconInstanceSensorDefinition>>(ACTUATOR_CONFIGURATION)
+    // const actuatorConfigRaw =
+    //   this._config.get<ActuatorConfigBase<string, PhosconInstanceSensorDefinition>>(ACTUATOR_CONFIGURATION)
     // if (!actuatorConfigRaw) this._log.warn(ACTUATOR_CONFIGURATION + EMPTY_ERROR_MSG)
     // const actuatorConfig = new ActuatorConfig(actuatorConfigRaw)
     /*
@@ -148,13 +148,13 @@ export class PhosconInterfaceService {
   private async configureSensors() {
     // configuration pre-processing
     const sensorConfigRaw =
-      this._config.get<SensorConfigBase<string, PhosconInstanceSensorDefinition>>(SENSOR_CONFIGURATION)
+      this._config.get<ChannelConfigBase<string, MeasurementTypeEnum, unknown>>(SENSOR_CONFIGURATION)
     if (!sensorConfigRaw) this._log.warn(SENSOR_CONFIGURATION + EMPTY_ERROR_MSG)
-    const sensorConfig = new SensorConfig<any>(sensorConfigRaw)
+    const sensorConfig = new ChannelConfig<MeasurementTypeEnum, unknown>(sensorConfigRaw)
 
     // discover sensor and actuators information from phoscon
     const discoveredSensors = await this._axios.get<PhosconSensorDiscoveryItem[]>('sensors')
-    const discoveredActuators = await this._axios.get<PhosconSensorDiscoveryItem[]>('lights')
+    const discoveredActuators = await this._axios.get<PhosconActuatorDiscoveryItem[]>('lights')
     const discoveredDevices = { ...discoveredSensors.data, ...discoveredActuators.data }
 
     // construct `selected` and `to ignore` id lists
@@ -190,17 +190,16 @@ export class PhosconInterfaceService {
           this._log.warn(`Unknown Zigbee type ${discovered.type}, full payload below`)
           console.log(discovered)
         } else {
-          const { nameExtension, measurementType, transformer, mqttSensorReading } = typeMap
+          const { nameExtension, measurementType, transformer } = typeMap
           const name = sensorName + nameExtension
-          const mqttValue = mqttSensorReading(name)
-          const sensorMapper = {
+          const channel = {
             uid: id,
-            config: discovered,
+            discoveredConfig: discovered,
             name,
-            mqttValue,
+            type: measurementType,
             transformer,
-          } as SensorBaseClass<number, PhosconSensorDiscoveryItem>
-          this._sensors.push(sensorMapper)
+          } as SensorChannel
+          this._sensorChannels.push(channel)
           this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
 
           // Process initial state
@@ -229,21 +228,20 @@ export class PhosconInterfaceService {
         //TODO unit toevoegen aan SensorReading
         //TODO stringValue toevoegen aan SensorReading
         const state = payload.state
-        const mapper = this._sensors.get(parseInt(payload.id))
-        if (mapper) {
-          const mqttData = mapper.mqttValue
-          if (mapper.transformer) {
-            mqttData.update(mapper.transformer(state))
-          } else {
-            this._log.warn(`Transformer not defined for mapper ${mapper.name}`)
+        const channel = this._sensorChannels.get(parseInt(payload.id))
+        if (channel) {
+          if (!channel.transformer) {
+            this._log.warn(`Transformer not defined for mapper ${channel.name}`)
           }
-          console.log(mqttData.toString())
-          this._mqttDriver.sendMeasurement(mqttData.sensorReading)
-          // this._mqttDriver.sendMeasurement(update)
-          //  else {  //TODO hoort bij discovery
-          //   this._log.warn(`Unknown measurement type ${mapper.typeSettings.valueType} full payload below`)
-          //   console.log(payload)
-          // }
+          const update = {
+            name: channel.name,
+            origin: 'phoscon',
+            time: now,
+            type: channel.type,
+            value: channel.transformer(payload.state),
+          } as SensorReading<SensorReadingValue>
+          console.log(JSON.stringify(update))
+          this._mqttDriver.sendMeasurement(update)
         } else {
           this._log.warn(
             `VALUE of unknown sensor (id=${payload.id}), value=${JSON.stringify(state)}, full payload below`,

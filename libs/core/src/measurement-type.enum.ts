@@ -10,3 +10,5 @@ export type MeasurementTypeEnum =
   | 'closure'
   | 'moving'
   | 'open-closed'
+
+export type NumericTypeEnum = 'temperature' | 'humidity' | 'illuminance'
