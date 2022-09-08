@@ -1,4 +1,6 @@
-import { CommandTypeEnum } from '@core/command-types/command-type.enum'
+import { Command } from '@core/commands/actuator-command.type'
+import { CommandTypeEnum } from '@core/commands/command-type.enum'
+import { OnOffCommand } from '@core/commands/on-off.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { Numeric, OnOff, Presence, SensorReadingValue, SwitchPressed } from '@core/sensor-reading-data-types'
 import {
@@ -89,8 +91,15 @@ export const SENSOR_TYPE_MAPPERS: Record<
   },
 }
 
-export const ACTUATOR_TYPE_MAPPERS: Record<string, [string, CommandTypeEnum]> = {
-  'On/Off plug-in unit': ['_relay', 'on-off'],
+export type PhosconOnOffCommand = {
+  // bri: number
+  // ct: number
+  on: boolean
+}
+export type PhosconCommand = PhosconOnOffCommand
+
+export const ACTUATOR_TYPE_MAPPERS: Record<string, [string, CommandTypeEnum, (state: Command) => PhosconCommand]> = {
+  'On/Off plug-in unit': ['_relay', 'on-off', cmd => ({ on: (cmd as OnOffCommand) === 'on' } as PhosconOnOffCommand)],
 }
 
 export const SENSOR_VALUE_MAPPERS: Record<
@@ -169,5 +178,3 @@ export const SENSOR_VALUE_MAPPERS: Record<
     formattedValue: (value, unit) => '',
   },
 }
-
-export type ActuatorSwitchCommand = { switch: 'on' | 'off' }

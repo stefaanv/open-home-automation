@@ -1,12 +1,12 @@
-import { CommandType as Command } from '@core/command-types/actuator-command.type'
-import { CommandTypeEnum } from '@core/command-types/command-type.enum'
+import { Command as Command } from '@core/commands/actuator-command.type'
+import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 
 export type Channel<
   TUID extends number | string,
   TType extends MeasurementTypeEnum | CommandTypeEnum,
-  TTransformerTarget extends SensorReadingValue | Command,
+  TTransformerTarget = SensorReadingValue,
 > = {
   uid: TUID
   name: string
@@ -26,7 +26,7 @@ export class ChannelList<TUID extends string | number, T extends { uid: TUID; na
     return this._list.find(e => e.uid === uid)
   }
 
-  public getConfigByName(name: string) {
+  public getByName(name: string) {
     return this._list.find(e => e.name === name)
   }
 

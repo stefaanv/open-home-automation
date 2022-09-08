@@ -39,6 +39,8 @@ export type PhosconActuatorDiscoveryItem = {
   uniqueid: string
 }
 
+export type PhosconDiscoveryItem = PhosconSensorDiscoveryItem | PhosconActuatorDiscoveryItem
+
 export type PhosconAttr = {
   id: string
   lastannounced: string | null // Date

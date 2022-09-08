@@ -4,8 +4,10 @@ export class ChannelConfigBase<T extends string | RegExp, TType, TInstanceDef> {
   define: Array<TInstanceDef> | undefined
 }
 
+export type ChannelConfigRaw<TType, TInstanceDef> = ChannelConfigBase<RegExp, TType, TInstanceDef>
+
 export class ChannelConfig<TType, TInstanceDef> extends ChannelConfigBase<RegExp, TType, TInstanceDef> {
-  constructor(config: ChannelConfigBase<string, TType, TInstanceDef>) {
+  constructor(config: ChannelConfigRaw<TType, TInstanceDef>) {
     super()
     this.ignore = new RegExp(config.ignore)
     this.discover = !config.discover

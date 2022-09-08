@@ -5,11 +5,11 @@ import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
 import Handlebars from 'handlebars'
 import https from 'https'
-import { CommandType } from '@core/actuator-types/actuator-command.type'
-import { RollerShutterActions, RollerShutterCommand } from '@core/actuator-types/roller-shutter.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReading } from '@core/sensor-reading.type'
-import { Numeric } from '@core/measurement-types/numeric.type'
+import { Numeric } from '@core/sensor-reading-data-types'
+import { Command } from '@core/commands/actuator-command.type'
+import { RollerShutterActions, RollerShutterCommand } from '@core/commands/roller-shutter'
 
 type SomfyDevice = {
   name: string | undefined
@@ -167,24 +167,24 @@ export class TahomaInterfaceService {
             return
         }
 
-        const update = {
-          time: new Date(),
-          type,
-          name,
-          value,
-          formattedValue,
-          unit,
-          origin: 'Tahoma',
-        } as SensorReading<Numeric>
-        console.log(JSON.stringify(update))
-        this._mqttDriver.sendMeasurement(update)
+        // const update = {
+        //   time: new Date(),
+        //   type,
+        //   name,
+        //   value,
+        //   formattedValue,
+        //   unit,
+        //   origin: 'Tahoma',
+        // } as SensorReading<Numeric>
+        // console.log(JSON.stringify(update))
+        // this._mqttDriver.sendMeasurement(update)
       })
     } else {
       console.log(`Unknown event for ${event.deviceURL} -> ${JSON.stringify(event)}`)
     }
   }
 
-  private mqttCallback(actuatorName: string, cmd: CommandType) {
+  private mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
     const actuator = this._actuators[actuatorName]
     if (!actuator) {
