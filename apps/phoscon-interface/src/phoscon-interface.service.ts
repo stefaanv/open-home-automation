@@ -155,7 +155,7 @@ export class PhosconInterfaceService {
     // discover sensor and actuators information from phoscon
     const discoveredSensors = await this._axios.get<PhosconSensorDiscoveryItem[]>('sensors')
     const discoveredActuators = await this._axios.get<PhosconActuatorDiscoveryItem[]>('lights')
-    const discoveredDevices = { ...discoveredSensors.data, ...discoveredActuators.data }
+    const discoveredDevices = discoveredSensors.data.concat(discoveredActuators.data)
 
     // construct `selected` and `to ignore` id lists
     const allIds = Object.keys(discoveredDevices).map(id => parseInt(id))
