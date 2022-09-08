@@ -118,7 +118,7 @@ export class TahomaInterfaceService {
     // connect to MQTT server for incoming commands
     const commandTemplate = Handlebars.compile('{{prefix}}/command/{{actuatorName}}')
     const mqttTopics = Object.values(this._actuators).map<string>(a =>
-      commandTemplate({ prefix: 'oha', actuatorName: a.name }),
+      commandTemplate({ prefix: 'oha2', actuatorName: a.name }),
     )
     this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
 
