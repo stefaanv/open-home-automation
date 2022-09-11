@@ -5,19 +5,13 @@ import { ConfigService } from '@nestjs/config'
 import WebSocket from 'ws'
 import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
-import {
-  PhosconActuatorDiscoveryItem,
-  PhosconDiscoveryItem,
-  PhosconEvent,
-  PhosconSensorDiscoveryItem,
-  PhosconState,
-} from './phoscon-type'
+import { PhosconDiscoveryItem, PhosconEvent } from './phoscon-type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS, PhosconCommand } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { regexExtract, regexTest } from '@core/helpers/helpers'
 import { Channel, ChannelList } from '@core/channel-list.class'
 import { Command as Command } from '@core/commands/actuator-command.type'
-import { ChannelConfig, ChannelConfigBase, ChannelConfigRaw } from '@core/configuration/channel-config-base.class'
+import { ChannelConfig, ChannelConfigRaw } from '@core/configuration/channel-config-base.class'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { SensorReading } from '@core/sensor-reading.type'

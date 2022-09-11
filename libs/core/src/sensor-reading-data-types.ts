@@ -1,6 +1,6 @@
 import { NumericTypeEnum } from './measurement-type.enum'
 
-export type SensorReadingValue = Numeric | OnOff | OpenClosed | Presence | SwitchPressed
+export type SensorReadingValue = Numeric | OnOff | OpenClosed | Presence | SwitchPressed | Moving
 
 export type Numeric = {
   value: number
@@ -9,6 +9,7 @@ export type Numeric = {
 }
 
 export type OnOff = 'on' | 'off' | undefined
+export type Moving = boolean
 export type OpenClosed = 'open' | 'closed' | undefined
 export type Presence = 'present' | 'absent' | undefined
 export type SwitchPressed = {
