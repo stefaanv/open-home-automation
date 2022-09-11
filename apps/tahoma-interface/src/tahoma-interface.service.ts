@@ -6,8 +6,6 @@ import { MqttDriver } from '@core/mqtt.driver'
 import Handlebars from 'handlebars'
 import https from 'https'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { SensorReading } from '@core/sensor-reading.type'
-import { Numeric } from '@core/sensor-reading-data-types'
 import { Command } from '@core/commands/actuator-command.type'
 import { RollerShutterActions, RollerShutterCommand } from '@core/commands/roller-shutter'
 
@@ -69,8 +67,8 @@ const tahomaRollerShutterCommandCreator = (
 @Injectable()
 export class TahomaInterfaceService {
   private readonly _axios: Axios
-  private _sensors: Record<string, SomfyDevice> = {}
-  private _actuators: Record<string, SomfyDevice> = {}
+  private _sensors_old: Record<string, SomfyDevice> = {}
+  private _actuators_old: Record<string, SomfyDevice> = {}
 
   constructor(
     private readonly _log: LoggingService,
@@ -99,7 +97,7 @@ export class TahomaInterfaceService {
 
   async discover() {
     const devices = await this._axios.get<SomfyDevice[]>('setup/devices')
-    this._actuators = devices.data
+    this._actuators_old = devices.data
       .filter(d => d.controllableName === 'io:RollerShutterGenericIOComponent')
       .reduce((acc, curr) => {
         const name = ACTUATOR_NAME_TRANSLATION[curr.label]
@@ -107,7 +105,7 @@ export class TahomaInterfaceService {
         acc[name] = curr
         return acc
       }, {})
-    this._sensors = devices.data
+    this._sensors_old = devices.data
       .filter(d => d.controllableName === 'io:LightIOSystemSensor')
       .reduce((acc, curr) => {
         curr.name = SENSOR_NAME_TRANSLATION[curr.label]
@@ -117,7 +115,7 @@ export class TahomaInterfaceService {
 
     // connect to MQTT server for incoming commands
     const commandTemplate = Handlebars.compile('{{prefix}}/command/{{actuatorName}}')
-    const mqttTopics = Object.values(this._actuators).map<string>(a =>
+    const mqttTopics = Object.values(this._actuators_old).map<string>(a =>
       commandTemplate({ prefix: 'oha2', actuatorName: a.name }),
     )
     this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
@@ -139,8 +137,8 @@ export class TahomaInterfaceService {
   }
 
   private async processSomfyEvent(event: SomfyEvent) {
-    const actuatorName = Object.values(this._actuators).find(a => a.deviceURL === event.deviceURL)?.name
-    const sensorName = this._sensors[event.deviceURL]?.name
+    const actuatorName = Object.values(this._actuators_old).find(a => a.deviceURL === event.deviceURL)?.name
+    const sensorName = this._sensors_old[event.deviceURL]?.name
     const name = sensorName ?? actuatorName
     if (name && event.name === 'DeviceStateChangedEvent') {
       event.deviceStates.forEach(ds => {
@@ -186,7 +184,7 @@ export class TahomaInterfaceService {
 
   private mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
-    const actuator = this._actuators[actuatorName]
+    const actuator = this._actuators_old[actuatorName]
     if (!actuator) {
       this._log.warn(`${actuatorName} is not defined in the actuator list`)
       return

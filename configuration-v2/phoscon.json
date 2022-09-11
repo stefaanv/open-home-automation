@@ -1,0 +1,26 @@
+{
+  "general": {
+    "apiKey": "7A5A3D4C96",
+    "baseUrl": "http://192.168.0.10:8081/api/{{apiKey}}",
+    "eventUrl": "ws://192.168.0.10:443"
+  },
+  "sensors": {
+    "ignore": "(Range|Configuration|unknown|Daylight|Eethoek|On\\/Off|Presence|LightLevel|Temperature|ronde)[\\w\\s]*",
+    "discover": [
+      {
+        "filter": "(?<sensorName>[\\w:]+)_(multi|lumi|cnct|plug|switch)"
+      }
+    ], 
+    "define":{
+    }
+  },
+  "actuators": {
+    "ignore": "(Range|Configuration|On\\/Off|Eethoek)[\\w\\s]*",
+    "discover": [
+      {
+        "filter": "(?<actuatorName>[\\w:]+)_plug",
+        "actuatorType": "on-off"
+      }
+    ]
+  }
+}

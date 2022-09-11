@@ -14,7 +14,7 @@ import {
 } from './phoscon-type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS, PhosconCommand } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { regexExtract, regexTest } from '@core/configuration/helpers'
+import { regexExtract, regexTest } from '@core/helpers/helpers'
 import { Channel, ChannelList } from '@core/channel-list.class'
 import { Command as Command } from '@core/commands/actuator-command.type'
 import { ChannelConfig, ChannelConfigBase, ChannelConfigRaw } from '@core/configuration/channel-config-base.class'

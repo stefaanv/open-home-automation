@@ -1,0 +1,11 @@
+{
+  "interfaceSpecific": {
+    "authorizationToken": "63086aa09f3085ae7199",
+    "baseUrl": "https://192.168.0.120:8443/enduser-mobile-web/1/enduserAPI"
+  },
+  "fromInterface": {
+    "interfaceSpecific": {},
+    "sensorMappers": []
+  },
+  "toInterface": {}
+}
