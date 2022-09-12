@@ -10,64 +10,18 @@ import { Command } from '@core/commands/actuator-command.type'
 import { RollerShutterActions, RollerShutterCommand } from '@core/commands/roller-shutter'
 import { Channel, ChannelList } from '@core/channel-list.class'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
-import { Moving, Numeric, SensorReadingValue } from '@core/sensor-reading-data-types'
+import { Moving, Numeric } from '@core/sensor-reading-data-types'
 import { SensorReading } from '@core/sensor-reading.type'
-
-type SomfyDevice = {
-  name: string | undefined
-  label: string
-  deviceURL: string
-  available: boolean
-  type: number
-  controllableName:
-    | 'io:RollerShutterGenericIOComponent'
-    | 'io:VerticalExteriorAwningIOComponent'
-    | 'io:StackComponent'
-    | 'io:LightIOSystemSensor'
-}
-
-type SomfyEventValue = number | { current_position: number } | boolean
-type SomfyEvent<TValue> = {
-  deviceURL: string
-  deviceStates: { type: number; name: string; value: TValue }[]
-  name: string
-}
-
-const ACTUATOR_NAME_TRANSLATION = { 'living zuid': 'rl_living_zuid' }
-const SENSOR_NAME_TRANSLATION = { 'Sun sensor': 'buiten_oost_lumi', 'living zuid': 'rl_living_zuid' }
-const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, string> = {
-  up: 'up',
-  down: 'close',
-  stop: 'stop',
-  toPosition: 'setClosure',
-}
+import {
+  ACTUATOR_NAME_TRANSLATION,
+  SENSOR_NAME_TRANSLATION,
+  SENSOR_TYPE_MAPPERS,
+  tahomaRollerShutterCommandCreator,
+} from './constants'
 
 const API_BASE_URL_KEY = 'tahoma.interfaceSpecific.baseUrl'
 const API_AUTHORIZATION_TOKEN_KEY = 'tahoma.interfaceSpecific.authorizationToken'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
-
-const tahomaRollerShutterCommandCreator = (
-  deviceURL: string,
-  action: RollerShutterActions,
-  position: number | undefined,
-) => {
-  const commandName = ROLLERSHUTTER_COMMAND_TRANSLATION[action]
-  const parameters = action === 'toPosition' ? [position] : []
-  return {
-    label: action,
-    actions: [
-      {
-        deviceURL,
-        commands: [
-          {
-            name: commandName,
-            parameters,
-          },
-        ],
-      },
-    ],
-  }
-}
 
 type TahomaCommand = any
 type SensorChannel = Channel<string, MeasurementTypeEnum>
@@ -120,17 +74,29 @@ export class TahomaInterfaceService {
         }),
       )
 
-    devices.data
-      .filter(d => ['io:LightIOSystemSensor', 'io:RollerShutterGenericIOComponent'].includes(d.controllableName))
-      .forEach(d =>
-        this._sensorChannels.push({
-          name: SENSOR_NAME_TRANSLATION[d.label],
-          uid: d.deviceURL,
-          discoveredConfig: d,
-          type: 'closure',
-          transformer: undefined,
-        }),
-      )
+    //    const sensorName = this._sensorChannels.get(event.deviceURL)?.name
+    const filteredDevices = devices.data.filter(
+      d =>
+        !!SENSOR_NAME_TRANSLATION[d.label] &&
+        ['io:RollerShutterGenericIOComponent', 'io:LightIOSystemSensor'].includes(d.controllableName),
+    )
+    filteredDevices.forEach(device => {
+      const sensorNamePrefix = SENSOR_NAME_TRANSLATION[device.label]!
+      device.states.forEach(state => {
+        // alle statussen overlopen, 1 device kan meerdere sensoren / actuatoren vertegenwoordigen
+        //TODO onderstaande nog in constant bestand steken zoals bij de Phoscon interface
+        if (SENSOR_TYPE_MAPPERS[state.name]) {
+          const { nameExtension, measurementType, transformer } = SENSOR_TYPE_MAPPERS[state.name]
+          this._sensorChannels.push({
+            uid: device.deviceURL + '_' + state.name,
+            discoveredConfig: device,
+            name: sensorNamePrefix + nameExtension,
+            transformer,
+            type: measurementType,
+          } as SensorChannel)
+        }
+      })
+    })
 
     // connect to MQTT server for incoming commands
     const commandTemplate = Handlebars.compile('{{prefix}}/command/{{actuatorName}}')
@@ -155,56 +121,30 @@ export class TahomaInterfaceService {
     }
   }
 
+  private async processSomfyState(
+    channel: SensorChannel,
+    state: SomfyState<SomfyEventValue>,
+  ): Promise<SensorReading<Numeric | Moving> | undefined> {
+    const update: SensorReading<Numeric | Moving> = {
+      time: new Date(),
+      name: channel.name,
+      value: channel.transformer(state.value) as Numeric | Moving,
+      origin: 'Tahoma',
+      type: channel.type,
+    }
+    return update
+  }
+
   private async processSomfyEvent(event: SomfyEvent<SomfyEventValue>) {
-    console.log(JSON.stringify(event))
-    const sensorName = this._sensorChannels.get(event.deviceURL)?.name
-    console.log(sensorName)
-    if (sensorName && event.name === 'DeviceStateChangedEvent') {
-      event.deviceStates.forEach(ds => {
-        const update: SensorReading<Numeric | boolean> = {
-          time: new Date(),
-          name: sensorName,
-          value: undefined,
-          origin: 'Tahoma',
-          type: undefined,
-        }
-
-        let value: number = ds.value as number
-        switch (ds.name) {
-          case 'core:ClosureState':
-            value = ds.value as number
-            update.type = 'closure'
-            update.value = {
-              value,
-              formattedValue: value.toFixed(0) + '%',
-              unit: '%',
-            }
-            update.name += '_closure'
-            break
-          case 'core:LuminanceState':
-            update.type = 'illuminance'
-            update.value = {
-              value,
-              formattedValue: value.toFixed(0) + ' Lux',
-              unit: ' Lux',
-            }
-            update.name += '_illu'
-            break
-          case 'core:MovingState':
-            update.type = 'moving'
-            update.value = ds.value as boolean
-            update.name += '_moving'
-            break
-          default:
-            return
-        }
-
+    event.deviceStates.forEach(async state => {
+      const channel = this._sensorChannels.get(event.deviceURL + '_' + state.name)
+      console.log(state.name)
+      if (channel && event.name === 'DeviceStateChangedEvent') {
+        const update = await this.processSomfyState(channel, state)
         console.log(JSON.stringify(update))
         this._mqttDriver.sendMeasurement(update)
-      })
-    } else {
-      console.log(`Unknown event for ${event.deviceURL} -> ${JSON.stringify(event)}`)
-    }
+      }
+    })
   }
 
   private mqttCallback(actuatorName: string, cmd: Command) {
