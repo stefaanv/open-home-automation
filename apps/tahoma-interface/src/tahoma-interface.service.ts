@@ -7,7 +7,7 @@ import Handlebars from 'handlebars'
 import https from 'https'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { Command } from '@core/commands/actuator-command.type'
-import { RollerShutterActions, RollerShutterCommand } from '@core/commands/roller-shutter'
+import { RollerShutterCommand } from '@core/commands/roller-shutter'
 import { Channel, ChannelList } from '@core/channel-list.class'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { Moving, Numeric } from '@core/sensor-reading-data-types'
@@ -64,52 +64,51 @@ export class TahomaInterfaceService {
     const devices = await this._axios.get<SomfyDevice[]>('setup/devices')
     devices.data
       .filter(d => d.controllableName === 'io:RollerShutterGenericIOComponent')
-      .forEach(d =>
+      .forEach(d => {
+        const actuatorName = ACTUATOR_NAME_TRANSLATION[d.label]
         this._actuatorChannels.push({
-          name: ACTUATOR_NAME_TRANSLATION[d.label],
+          name: actuatorName,
           uid: d.deviceURL,
           discoveredConfig: d,
           type: 'roller-shutter',
           transformer: undefined,
-        }),
-      )
-
-    //    const sensorName = this._sensorChannels.get(event.deviceURL)?.name
-    const filteredDevices = devices.data.filter(
-      d =>
-        !!SENSOR_NAME_TRANSLATION[d.label] &&
-        ['io:RollerShutterGenericIOComponent', 'io:LightIOSystemSensor'].includes(d.controllableName),
-    )
-    filteredDevices.forEach(device => {
-      const sensorNamePrefix = SENSOR_NAME_TRANSLATION[device.label]!
-      device.states.forEach(state => {
-        // alle statussen overlopen, 1 device kan meerdere sensoren / actuatoren vertegenwoordigen
-        //TODO onderstaande nog in constant bestand steken zoals bij de Phoscon interface
-        if (SENSOR_TYPE_MAPPERS[state.name]) {
-          const { nameExtension, measurementType, transformer } = SENSOR_TYPE_MAPPERS[state.name]
-          this._sensorChannels.push({
-            uid: device.deviceURL + '_' + state.name,
-            discoveredConfig: device,
-            name: sensorNamePrefix + nameExtension,
-            transformer,
-            type: measurementType,
-          } as SensorChannel)
-        }
+        })
       })
-    })
+
+    devices.data
+      .filter(
+        d =>
+          !!SENSOR_NAME_TRANSLATION[d.label] &&
+          ['io:RollerShutterGenericIOComponent', 'io:LightIOSystemSensor'].includes(d.controllableName),
+      )
+      .forEach(device => {
+        const sensorNamePrefix = SENSOR_NAME_TRANSLATION[device.label]!
+        device.states.forEach(state => {
+          // alle statussen overlopen, 1 device kan meerdere sensoren / actuatoren vertegenwoordigen
+          //TODO onderstaande nog in constant bestand steken zoals bij de Phoscon interface
+          if (SENSOR_TYPE_MAPPERS[state.name]) {
+            const { nameExtension, measurementType, transformer } = SENSOR_TYPE_MAPPERS[state.name]
+            this._sensorChannels.push({
+              uid: device.deviceURL + '_' + state.name,
+              discoveredConfig: device,
+              name: sensorNamePrefix + nameExtension,
+              transformer,
+              type: measurementType,
+            } as SensorChannel)
+          }
+        })
+      })
 
     // connect to MQTT server for incoming commands
     const commandTemplate = Handlebars.compile('{{prefix}}/command/{{actuatorName}}')
-    const mqttTopics = Object.values(this._actuators_old).map<string>(a =>
-      commandTemplate({ prefix: 'oha2', actuatorName: a.name }),
-    )
+    const mqttTopics = this._actuatorChannels.all.map(a => commandTemplate({ prefix: 'oha2', actuatorName: a.name }))
     this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
 
     // register an event listener with the Tahoma box
     const result = await this._axios.post('events/register', {})
     const eventListenerId = result.data.id
     this._log.log(`Listening on ${eventListenerId}`)
-    setInterval(() => this.eventPoller(eventListenerId), 2000)
+    setInterval(() => this.eventPoller(eventListenerId), 500)
   }
 
   private async eventPoller(eventListenerId: string) {
@@ -136,27 +135,28 @@ export class TahomaInterfaceService {
   }
 
   private async processSomfyEvent(event: SomfyEvent<SomfyEventValue>) {
-    event.deviceStates.forEach(async state => {
-      const channel = this._sensorChannels.get(event.deviceURL + '_' + state.name)
-      console.log(state.name)
-      if (channel && event.name === 'DeviceStateChangedEvent') {
-        const update = await this.processSomfyState(channel, state)
-        console.log(JSON.stringify(update))
-        this._mqttDriver.sendMeasurement(update)
-      }
-    })
+    if (event.name === 'DeviceStateChangedEvent')
+      event.deviceStates.forEach(async state => {
+        const channel = this._sensorChannels.get(event.deviceURL + '_' + state.name)
+        if (channel) {
+          const update = await this.processSomfyState(channel, state)
+          console.log(JSON.stringify(update))
+          this._mqttDriver.sendMeasurement(update)
+        }
+      })
   }
 
+  //TODO nog voorkomen dat verkeerde commando's gestuurd kunnen worden
   private mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
-    const actuator = this._actuators_old[actuatorName]
+    const actuator = this._actuatorChannels.getByName(actuatorName)
     if (!actuator) {
       this._log.warn(`${actuatorName} is not defined in the actuator list`)
       return
     }
-    if (actuator.controllableName === 'io:RollerShutterGenericIOComponent') {
+    if (actuator.type === 'roller-shutter') {
       const command = cmd as RollerShutterCommand
-      const outData = tahomaRollerShutterCommandCreator(actuator.deviceURL, command.action, command.position)
+      const outData = tahomaRollerShutterCommandCreator(actuator.uid, command.action, command.position)
       this._axios.post('exec/apply', outData).then(value => {
         const msg = {
           up: `Opening ${actuatorName}`,

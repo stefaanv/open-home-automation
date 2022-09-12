@@ -4,7 +4,7 @@ import * as mqtt from 'async-mqtt'
 import { LoggingService } from './logging.service'
 import handlebars from 'handlebars'
 import { SensorReading } from './sensor-reading.type'
-import { Command, MqttCommandPacket } from '@core/commands/actuator-command.type'
+import { Command } from '@core/commands/actuator-command.type'
 import { SensorReadingValue } from './sensor-reading-data-types'
 
 export type CommandCallback = (actuatorName: string, command: Command) => void
@@ -49,11 +49,11 @@ export class MqttDriver {
   }
 
   private mqttReceived(topic: string, message: Buffer) {
-    const payload: MqttCommandPacket = JSON.parse(message.toString('utf-8'))
+    const payload: Command = JSON.parse(message.toString('utf-8'))
     const actuatorName = this._actuatorNameExtractor.exec(topic).groups['actuatorName']
     // this._log.debug(`received from ${topic} ${JSON.stringify(payload)}`)
 
-    if (this._callback) this._callback(actuatorName, payload.command)
+    if (this._callback) this._callback(actuatorName, payload)
   }
 
   public sendMeasurement(update: SensorReading<SensorReadingValue>) {
