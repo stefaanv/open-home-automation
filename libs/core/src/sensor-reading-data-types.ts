@@ -1,4 +1,4 @@
-import { NumericTypeEnum } from './measurement-type.enum'
+import { NumericMeasurementTypeEnum } from './measurement-type.enum'
 
 export type SensorReadingValue = Numeric | OnOff | OpenClosed | Presence | SwitchPressed | Moving
 

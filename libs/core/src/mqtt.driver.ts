@@ -4,7 +4,7 @@ import * as mqtt from 'async-mqtt'
 import { LoggingService } from './logging.service'
 import handlebars from 'handlebars'
 import { SensorReading } from './sensor-reading.type'
-import { Command } from '@core/commands/actuator-command.type'
+import { Command } from '@core/commands/command.type'
 import { SensorReadingValue } from './sensor-reading-data-types'
 
 export type CommandCallback = (actuatorName: string, command: Command) => void

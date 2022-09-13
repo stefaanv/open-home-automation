@@ -1,14 +1,23 @@
-import { Command } from '@core/commands/actuator-command.type'
+import { Command } from '@core/commands/command.type'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { OnOffCommand } from '@core/commands/on-off.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { Numeric, OnOff, Presence, SensorReadingValue, SwitchPressed } from '@core/sensor-reading-data-types'
+import {
+  Numeric,
+  OnOff,
+  OpenClosed,
+  Presence,
+  SensorReadingValue,
+  SwitchPressed,
+} from '@core/sensor-reading-data-types'
 import {
   HumidityState,
   LightLevelState,
   OnOffState,
   OpenClosedState,
+  PhosconActuatorCommandTransformer,
   PhosconReportedValue,
+  PhosconSensorValueTransformer,
   PhosconState,
   PresenceState,
   SwitchState,
@@ -43,7 +52,7 @@ export const SENSOR_TYPE_MAPPERS: Record<
   {
     nameExtension: string
     measurementType: MeasurementTypeEnum
-    transformer: (state: PhosconState) => SensorReadingValue
+    transformer: PhosconSensorValueTransformer
   }
 > = {
   ZHALightLevel: {
@@ -71,7 +80,7 @@ export const SENSOR_TYPE_MAPPERS: Record<
     nameExtension: '_cnct',
     measurementType: 'contact',
     transformer: state =>
-      ((state as OpenClosedState).open ?? (state as OpenClosedState).on ? 'present' : 'absent') as Presence,
+      ((state as OpenClosedState).open ?? (state as OpenClosedState).on ? 'open' : 'closed') as OpenClosed,
   },
   ZHASwitch: {
     nameExtension: '_sw',
@@ -91,15 +100,8 @@ export const SENSOR_TYPE_MAPPERS: Record<
   },
 }
 
-export type PhosconOnOffCommand = {
-  // bri: number
-  // ct: number
-  on: boolean
-}
-export type PhosconCommand = PhosconOnOffCommand
-
-export const ACTUATOR_TYPE_MAPPERS: Record<string, [string, CommandTypeEnum, (state: Command) => PhosconCommand]> = {
-  'On/Off plug-in unit': ['_relay', 'on-off', cmd => ({ on: (cmd as OnOffCommand) === 'on' } as PhosconOnOffCommand)],
+export const ACTUATOR_TYPE_MAPPERS: Record<string, [string, CommandTypeEnum, PhosconActuatorCommandTransformer]> = {
+  'On/Off plug-in unit': ['_relay', 'on-off', cmd => ({ on: (cmd as OnOffCommand) === 'on' })],
 }
 
 export const SENSOR_VALUE_MAPPERS: Record<

@@ -1,3 +1,6 @@
+import { Command } from '@core/commands/command.type'
+import { SensorReadingValue } from '@core/sensor-reading-data-types'
+
 export type PhosconEvent = {
   e: string
   id: string
@@ -99,3 +102,12 @@ export type OnOffState = {
 } & BaseState
 
 export type PhosconReportedValue = string | number | boolean | undefined
+
+export type PhosconOnOffCommand = {
+  // bri: number
+  // ct: number
+  on: boolean
+}
+export type PhosconCommand = PhosconOnOffCommand
+export type PhosconActuatorCommandTransformer = (state: Command) => PhosconCommand
+export type PhosconSensorValueTransformer = (state: PhosconState) => SensorReadingValue

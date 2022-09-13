@@ -5,16 +5,26 @@ import { ConfigService } from '@nestjs/config'
 import WebSocket from 'ws'
 import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
-import { PhosconDiscoveryItem, PhosconEvent } from './phoscon-type'
-import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS, PhosconCommand } from './constants'
+import {
+  PhosconActuatorCommandTransformer,
+  PhosconCommand,
+  PhosconDiscoveryItem,
+  PhosconEvent,
+  PhosconSensorValueTransformer,
+  PhosconState,
+} from './phoscon-type'
+import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { regexExtract, regexTest } from '@core/helpers/helpers'
-import { Channel, ChannelList } from '@core/channel-list.class'
-import { Command as Command } from '@core/commands/actuator-command.type'
+import { Command as Command } from '@core/commands/command.type'
 import { ChannelConfig, ChannelConfigRaw } from '@core/configuration/channel-config-base.class'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { SensorReading } from '@core/sensor-reading.type'
+import { ActuatorChannel } from '@core/channels/actuator-channel.type'
+import { SensorChannel } from '@core/channels/sensor-channel.type'
+import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
+import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -23,14 +33,11 @@ const SENSOR_CONFIGURATION = 'phoscon.sensors'
 const ACTUATOR_CONFIGURATION = 'phoscon.actuators'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
-type SensorChannel = Channel<number, MeasurementTypeEnum>
-type ActuatorChannel = Channel<number, CommandTypeEnum, PhosconCommand>
-
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
-  private readonly _sensorChannels = new ChannelList<number, SensorChannel>()
-  private readonly _actuatorChannels = new ChannelList<number, ActuatorChannel>()
+  private readonly _sensorChannels = new SensorChannelList<number, PhosconSensorValueTransformer>()
+  private readonly _actuatorChannels = new ActuatorChannelList<number, PhosconActuatorCommandTransformer>()
   private _ignoreIds: number[] = []
   private _processingStarted = false
   private readonly _axios: Axios
@@ -113,11 +120,10 @@ export class PhosconInterfaceService {
           const name = actuatorName + nameExtension
           const channel = {
             uid: id,
-            discoveredConfig: discovered,
             name,
             type: commandType,
             transformer,
-          } as ActuatorChannel
+          } as ActuatorChannel<number, PhosconActuatorCommandTransformer>
 
           this._actuatorChannels.push(channel)
           this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${commandType} (id=${id})`)
@@ -133,7 +139,7 @@ export class PhosconInterfaceService {
   private mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
     const actuator = this._actuatorChannels.getByName(actuatorName)
-    const phosconCmd = actuator.transformer(cmd)
+    const phosconCmd = (actuator.transformer as PhosconActuatorCommandTransformer)(cmd)
 
     this._axios.put(`lights/${actuator.uid}/state`, phosconCmd)
   }
@@ -145,6 +151,7 @@ export class PhosconInterfaceService {
     const sensorConfig = new ChannelConfig<MeasurementTypeEnum, unknown>(sensorConfigRaw)
 
     // discover sensor and actuators information from phoscon
+    //TODO nummering actuatoren en sensoren overlapt ! mogen dus niet samen gegooid worden !
     const discoveredSensors = await this._axios.get<PhosconDiscoveryItem[]>('sensors')
     const discoveredActuators = await this._axios.get<PhosconDiscoveryItem[]>('lights')
     const discoveredDevices = { ...discoveredSensors.data, ...discoveredActuators.data }
@@ -186,11 +193,10 @@ export class PhosconInterfaceService {
           const name = sensorName + nameExtension
           const channel = {
             uid: id,
-            discoveredConfig: discovered,
             name,
             type: measurementType,
             transformer,
-          } as SensorChannel
+          } as SensorChannel<number, PhosconSensorValueTransformer>
           this._sensorChannels.push(channel)
           this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
 
@@ -212,6 +218,8 @@ export class PhosconInterfaceService {
     }
     const now = new Date()
     const payload: PhosconEvent = JSON.parse(event.data.toString())
+    //{"e":"changed","id":"4","r":"sensors","state":{"buttonevent":1002,"lastupdated":"2022-09-13T16:16:55.915"},"t":"event","uniqueid":"00:12:4b:00:22:42:41:25-01-0006"}
+    if (payload.state && payload?.state['buttonevent']) console.log(payload.state)
     try {
       if (payload.state && payload.r !== 'groups' && !this._ignoreIds.includes(parseInt(payload.id))) {
         // if attr property is present then packet is repeat config
@@ -221,6 +229,8 @@ export class PhosconInterfaceService {
         //TODO stringValue toevoegen aan SensorReading
         const state = payload.state
         const channel = this._sensorChannels.get(parseInt(payload.id))
+        if (payload.state && payload?.state['buttonevent']) console.log(payload.state)
+
         if (channel) {
           if (!channel.transformer) {
             this._log.warn(`Transformer not defined for mapper ${channel.name}`)
@@ -230,7 +240,7 @@ export class PhosconInterfaceService {
             origin: 'phoscon',
             time: now,
             type: channel.type,
-            value: channel.transformer(payload.state),
+            value: channel.transformer(state),
           } as SensorReading<SensorReadingValue>
           console.log(JSON.stringify(update))
           this._mqttDriver.sendMeasurement(update)
