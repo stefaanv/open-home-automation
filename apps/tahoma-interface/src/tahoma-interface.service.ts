@@ -91,12 +91,13 @@ export class TahomaInterfaceService {
           //TODO onderstaande nog in constant bestand steken zoals bij de Phoscon interface
           if (SENSOR_TYPE_MAPPERS[state.name]) {
             const { nameExtension, measurementType, transformer } = SENSOR_TYPE_MAPPERS[state.name]
-            this._sensorChannels.push({
-              uid: device.deviceURL + '_' + state.name,
-              name: sensorNamePrefix + nameExtension,
+            const channel = new SensorChannel<string, SomfyState>(
+              device.deviceURL + '_' + state.name,
+              sensorNamePrefix + nameExtension,
+              measurementType,
               transformer,
-              type: measurementType,
-            })
+            )
+            this._sensorChannels.push(channel)
           }
         })
       })
@@ -122,27 +123,12 @@ export class TahomaInterfaceService {
     }
   }
 
-  private async processSomfyState(
-    channel: SensorChannel<string, SomfyState>,
-    state: SomfyState,
-  ): Promise<SensorReading<Numeric | Moving> | undefined> {
-    const update: SensorReading<Numeric | Moving> = {
-      time: new Date(),
-      name: channel.name,
-      value: channel.transformer(state) as Numeric | Moving,
-      origin: 'Tahoma',
-      type: channel.type,
-    }
-    return update
-  }
-
   private async processSomfyEvent(event: SomfyEvent) {
     if (event.name === 'DeviceStateChangedEvent')
       event.deviceStates.forEach(async state => {
         const channel = this._sensorChannels.get(event.deviceURL + '_' + state.name)
         if (channel) {
-          const update = await this.processSomfyState(channel, state)
-          console.log(JSON.stringify(update))
+          const update = await channel.getSensorReading(state, 'Tahoma', new Date(), this._log)
           this._mqttDriver.sendMeasurement(update)
         } else {
           console.log(`channel undefined for event ${state.name}`)

@@ -23,6 +23,7 @@ import { SensorReading } from '@core/sensor-reading.type'
 import { ActuatorChannel } from '@core/channels/actuator-channel.type'
 import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
 import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
+import { SensorChannel } from '@core/channels/sensor-channel.type'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -189,12 +190,7 @@ export class PhosconInterfaceService {
         } else {
           const { nameExtension, measurementType, transformer } = typeMap
           const name = sensorName + nameExtension
-          const channel = {
-            uid: id,
-            name,
-            type: measurementType,
-            transformer,
-          }
+          const channel = new SensorChannel<number, PhosconState>(id, name, measurementType, transformer)
           this._sensorChannels.push(channel)
           this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
 
@@ -230,17 +226,7 @@ export class PhosconInterfaceService {
         if (payload.state && payload?.state['buttonevent']) console.log(payload.state)
 
         if (channel) {
-          if (!channel.transformer) {
-            this._log.warn(`Transformer not defined for mapper ${channel.name}`)
-          }
-          const update = {
-            name: channel.name,
-            origin: 'phoscon',
-            time: now,
-            type: channel.type,
-            value: channel.transformer(state),
-          } as SensorReading<SensorReadingValue>
-          console.log(JSON.stringify(update))
+          const update = channel.getSensorReading(state, 'phoscon', now, this._log)
           this._mqttDriver.sendMeasurement(update)
         } else {
           this._log.warn(
