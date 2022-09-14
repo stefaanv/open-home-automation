@@ -15,7 +15,7 @@ import {
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { regexExtract, regexTest } from '@core/helpers/helpers'
-import { Command as Command } from '@core/commands/command.type'
+import { Command } from '@core/commands/command.type'
 import { ChannelConfig, ChannelConfigRaw } from '@core/configuration/channel-config-base.class'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
