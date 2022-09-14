@@ -17,9 +17,7 @@ import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { regexExtract, regexTest } from '@core/helpers/helpers'
 import { Command } from '@core/commands/command.type'
 import { ChannelConfig, ChannelConfigRaw } from '@core/configuration/channel-config-base.class'
-import { SensorReadingValue } from '@core/sensor-reading-data-types'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
-import { SensorReading } from '@core/sensor-reading.type'
 import { ActuatorChannel } from '@core/channels/actuator-channel.type'
 import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
 import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
@@ -62,6 +60,8 @@ export class PhosconInterfaceService {
   }
 
   private async configure() {
+    SensorChannel.log = this._log
+    ActuatorChannel.log = this._log
     await this.configureSensors()
     await this.configureActuators()
     this._log.log(`configuration done, starting the listener`)
@@ -115,17 +115,17 @@ export class PhosconInterfaceService {
           this._log.warn(`Unknown actuator type ${discovered.type}, full payload below`)
           console.log(discovered)
         } else {
-          const [nameExtension, commandType, transformer] = typeMap
+          const [nameExtension, type, transformer] = typeMap
           const name = actuatorName + nameExtension
-          const channel = {
-            uid: id,
-            name,
-            type: commandType,
+          const channel = new ActuatorChannel<number, PhosconCommand>(
+            id,
+            actuatorName + nameExtension,
+            type,
             transformer,
-          } as ActuatorChannel<number, PhosconCommand>
+          )
 
           this._actuatorChannels.push(channel)
-          this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${commandType} (id=${id})`)
+          this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${type} (id=${id})`)
         }
       }
     }
@@ -137,10 +137,8 @@ export class PhosconInterfaceService {
 
   private mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
-    const actuator = this._actuatorChannels.getByName(actuatorName)
-    const phosconCmd = (actuator.transformer as PhosconActuatorCommandTransformer)(cmd)
-
-    this._axios.put(`lights/${actuator.uid}/state`, phosconCmd)
+    const actuatorChannel = this._actuatorChannels.getByName(actuatorName)
+    this._axios.put(`lights/${actuatorChannel.uid}/state`, actuatorChannel.getCommand(cmd))
   }
 
   private async configureSensors() {
@@ -226,7 +224,7 @@ export class PhosconInterfaceService {
         if (payload.state && payload?.state['buttonevent']) console.log(payload.state)
 
         if (channel) {
-          const update = channel.getSensorReading(state, 'phoscon', now, this._log)
+          const update = channel.getSensorReading(state, 'phoscon', now)
           this._mqttDriver.sendMeasurement(update)
         } else {
           this._log.warn(

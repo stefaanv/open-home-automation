@@ -26,6 +26,7 @@ import {
   SomfyState,
 } from './types'
 import { SensorChannel } from '@core/channels/sensor-channel.type'
+import { ActuatorChannel } from '@core/channels/actuator-channel.type'
 
 const API_BASE_URL_KEY = 'tahoma.interfaceSpecific.baseUrl'
 const API_AUTHORIZATION_TOKEN_KEY = 'tahoma.interfaceSpecific.authorizationToken'
@@ -65,17 +66,25 @@ export class TahomaInterfaceService {
   }
 
   async discover() {
+    SensorChannel.log = this._log
+    ActuatorChannel.log = this._log
+
     const devices = await this._axios.get<SomfyDevice[]>('setup/devices')
     devices.data
       .filter(d => d.controllableName === 'io:RollerShutterGenericIOComponent')
       .forEach(d => {
         const actuatorName = ACTUATOR_NAME_TRANSLATION[d.label]
-        this._actuatorChannels.push({
-          name: actuatorName,
-          uid: d.deviceURL,
-          type: 'roller-shutter',
-          transformer: undefined,
-        })
+        const transformer = (command: Command) => {
+          const cmd = command as RollerShutterCommand
+          return tahomaRollerShutterCommandCreator(d.deviceURL, cmd.action, cmd.position)
+        }
+        const actuatorChannel = new ActuatorChannel<string, any>(
+          d.deviceURL,
+          actuatorName,
+          'roller-shutter',
+          transformer,
+        )
+        this._actuatorChannels.push(actuatorChannel)
       })
 
     devices.data
@@ -128,7 +137,7 @@ export class TahomaInterfaceService {
       event.deviceStates.forEach(async state => {
         const channel = this._sensorChannels.get(event.deviceURL + '_' + state.name)
         if (channel) {
-          const update = await channel.getSensorReading(state, 'Tahoma', new Date(), this._log)
+          const update = await channel.getSensorReading(state, 'Tahoma', new Date())
           this._mqttDriver.sendMeasurement(update)
         } else {
           console.log(`channel undefined for event ${state.name}`)

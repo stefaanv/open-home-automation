@@ -11,13 +11,15 @@ export class SensorChannel<TUID extends number | string, TIn = any> extends Chan
   MeasurementTypeEnum,
   SensorChannelTransformer<TIn>
 > {
+  static log: LoggingService
+
   constructor(uid: TUID, name: string, type: MeasurementTypeEnum, transformer: SensorChannelTransformer<TIn>) {
     super(uid, name, type, transformer)
   }
 
-  getSensorReading(state: TIn, interfaceName: string, time: Date, log: LoggingService): SensorReading {
+  getSensorReading(state: TIn, interfaceName: string, time: Date): SensorReading {
     if (!this.transformer) {
-      log.warn(`Transformer not defined for mapper ${this.name}`)
+      SensorChannel.log.warn(`Transformer not defined for mapper ${this.name}`)
     }
     const update = {
       name: this.name,
