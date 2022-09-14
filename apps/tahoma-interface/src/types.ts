@@ -1,4 +1,7 @@
-type SomfySensorStatesEnum =
+import { Command } from '@core/commands/command.type'
+import { SensorReadingValue } from '@core/sensor-reading-data-types'
+
+export type SomfySensorStatesEnum =
   | 'core:LuminanceState'
   | 'core:StatusState'
   | 'core:DiscreteRSSILevelState'
@@ -11,9 +14,9 @@ type SomfySensorStatesEnum =
   | 'core:NameState'
   | 'core:Memorized1PositionState'
 
-type SomfyEventNamesEnum = 'DeviceStateChangedEvent'
+export type SomfyEventNamesEnum = 'DeviceStateChangedEvent'
 
-type SomfyDevice = {
+export type SomfyDevice = {
   name: string | undefined
   label: string
   deviceURL: string
@@ -27,12 +30,15 @@ type SomfyDevice = {
     | 'io:LightIOSystemSensor'
 }
 
-type SomfyCurrentPosition = { current_position: number }
-type SomfyEventValue = number | SomfyCurrentPosition | boolean
-type SomfyState<TValue extends SomfyEventValue> = { type: number; name: SomfyEventNamesEnum; value: TValue }
+export type SomfyCurrentPosition = number
+export type SomfyEventValue = number | SomfyCurrentPosition | boolean
+export type SomfyState<TValue extends SomfyEventValue> = { type: number; name: SomfyEventNamesEnum; value: TValue }
 
-type SomfyEvent<TValue extends SomfyEventValue> = {
+export type SomfyEvent<TValue extends SomfyEventValue> = {
   deviceURL: string
   deviceStates: Array<SomfyState<TValue>>
   name: SomfyEventNamesEnum
 }
+
+export type SomfyActuatorCommandTransformer = (state: Command) => any
+export type SomfySensorValueTransformer = (state: SomfyState<SomfyEventValue>) => SensorReadingValue

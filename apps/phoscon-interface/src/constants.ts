@@ -22,7 +22,7 @@ import {
   PresenceState,
   SwitchState,
   TemperatureState,
-} from './phoscon-type'
+} from './type'
 
 export type PhosconStateTypeName =
   | 'ZHAPresence'

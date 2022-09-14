@@ -7,12 +7,10 @@ import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
 import {
   PhosconActuatorCommandTransformer,
-  PhosconCommand,
   PhosconDiscoveryItem,
   PhosconEvent,
   PhosconSensorValueTransformer,
-  PhosconState,
-} from './phoscon-type'
+} from './type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { regexExtract, regexTest } from '@core/helpers/helpers'
@@ -151,7 +149,7 @@ export class PhosconInterfaceService {
     const sensorConfig = new ChannelConfig<MeasurementTypeEnum, unknown>(sensorConfigRaw)
 
     // discover sensor and actuators information from phoscon
-    //TODO nummering actuatoren en sensoren overlapt ! mogen dus niet samen gegooid worden !
+    //TODO! nummering actuatoren en sensoren overlapt ! mogen dus niet samen gegooid worden !
     const discoveredSensors = await this._axios.get<PhosconDiscoveryItem[]>('sensors')
     const discoveredActuators = await this._axios.get<PhosconDiscoveryItem[]>('lights')
     const discoveredDevices = { ...discoveredSensors.data, ...discoveredActuators.data }

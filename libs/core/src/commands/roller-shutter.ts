@@ -1,4 +1,4 @@
-export type RollerShutterActions = 'up' | 'down' | 'stop' | 'toPosition'
+export type RollerShutterActions = 'up' | 'open' | 'down' | 'close' | 'stop' | 'toPosition'
 
 export type RollerShutterCommand = {
   action: RollerShutterActions

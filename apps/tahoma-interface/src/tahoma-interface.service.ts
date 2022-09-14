@@ -1,15 +1,12 @@
 import { Injectable } from '@nestjs/common'
-import axios, { Axios } from 'axios'
+import axios, { Axios, AxiosError } from 'axios'
 import { ConfigService } from '@nestjs/config'
 import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
 import Handlebars from 'handlebars'
 import https from 'https'
-import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { Command } from '@core/commands/command.type'
 import { RollerShutterCommand } from '@core/commands/roller-shutter'
-import { Channel, ChannelList } from '@core/channel-list.class'
-import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { Moving, Numeric } from '@core/sensor-reading-data-types'
 import { SensorReading } from '@core/sensor-reading.type'
 import {
@@ -18,22 +15,29 @@ import {
   SENSOR_TYPE_MAPPERS,
   tahomaRollerShutterCommandCreator,
 } from './constants'
+import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
+import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
+import {
+  SomfyActuatorCommandTransformer,
+  SomfyDevice,
+  SomfyEvent,
+  SomfyEventValue,
+  SomfySensorValueTransformer,
+  SomfyState,
+} from './types'
+import { SensorChannel } from '@core/channels/sensor-channel.type'
 
 const API_BASE_URL_KEY = 'tahoma.interfaceSpecific.baseUrl'
 const API_AUTHORIZATION_TOKEN_KEY = 'tahoma.interfaceSpecific.authorizationToken'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
 type TahomaCommand = any
-type SensorChannel = Channel<string, MeasurementTypeEnum>
-type ActuatorChannel = Channel<string, CommandTypeEnum, TahomaCommand>
 
 @Injectable()
 export class TahomaInterfaceService {
   private readonly _axios: Axios
-  private _sensors_old: Record<string, SomfyDevice> = {} //TODO te verwijderen na v2
-  private _actuators_old: Record<string, SomfyDevice> = {} //TODO te verwijderen na v2
-  private readonly _sensorChannels = new ChannelList<string, SensorChannel>()
-  private readonly _actuatorChannels = new ChannelList<string, ActuatorChannel>()
+  private readonly _sensorChannels = new SensorChannelList<string, SomfySensorValueTransformer>()
+  private readonly _actuatorChannels = new ActuatorChannelList<string, SomfyActuatorCommandTransformer>()
 
   constructor(
     private readonly _log: LoggingService,
@@ -69,7 +73,6 @@ export class TahomaInterfaceService {
         this._actuatorChannels.push({
           name: actuatorName,
           uid: d.deviceURL,
-          discoveredConfig: d,
           type: 'roller-shutter',
           transformer: undefined,
         })
@@ -90,11 +93,10 @@ export class TahomaInterfaceService {
             const { nameExtension, measurementType, transformer } = SENSOR_TYPE_MAPPERS[state.name]
             this._sensorChannels.push({
               uid: device.deviceURL + '_' + state.name,
-              discoveredConfig: device,
               name: sensorNamePrefix + nameExtension,
               transformer,
               type: measurementType,
-            } as SensorChannel)
+            })
           }
         })
       })
@@ -121,13 +123,13 @@ export class TahomaInterfaceService {
   }
 
   private async processSomfyState(
-    channel: SensorChannel,
+    channel: SensorChannel<string, SomfySensorValueTransformer>,
     state: SomfyState<SomfyEventValue>,
   ): Promise<SensorReading<Numeric | Moving> | undefined> {
     const update: SensorReading<Numeric | Moving> = {
       time: new Date(),
       name: channel.name,
-      value: channel.transformer(state.value) as Numeric | Moving,
+      value: channel.transformer(state) as Numeric | Moving,
       origin: 'Tahoma',
       type: channel.type,
     }
@@ -142,12 +144,15 @@ export class TahomaInterfaceService {
           const update = await this.processSomfyState(channel, state)
           console.log(JSON.stringify(update))
           this._mqttDriver.sendMeasurement(update)
+        } else {
+          console.log(`channel undefined for event ${state.name}`)
         }
       })
   }
 
   //TODO nog voorkomen dat verkeerde commando's gestuurd kunnen worden
-  private mqttCallback(actuatorName: string, cmd: Command) {
+  // testen met topic = `oha2/command/rl_living_zuid`, data = `{"action":"close"}` of `{"command":{"action":"toPosition","position":10}}`
+  private async mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
     const actuator = this._actuatorChannels.getByName(actuatorName)
     if (!actuator) {
@@ -157,15 +162,22 @@ export class TahomaInterfaceService {
     if (actuator.type === 'roller-shutter') {
       const command = cmd as RollerShutterCommand
       const outData = tahomaRollerShutterCommandCreator(actuator.uid, command.action, command.position)
-      this._axios.post('exec/apply', outData).then(value => {
+      try {
+        const result = await this._axios.post('exec/apply', outData)
         const msg = {
           up: `Opening ${actuatorName}`,
           down: `Closing ${actuatorName}`,
           stop: `Stopping ${actuatorName}`,
           toPosition: `Moving ${actuatorName} to ${command.position}% closure`,
         }[command.action]
-        this._log.log(`${msg}. (${value.data.execId})`)
-      })
+        this._log.log(`${msg}`)
+      } catch (error: unknown | AxiosError) {
+        if (axios.isAxiosError(error)) {
+          console.error(error.message)
+        } else {
+          console.error(error)
+        }
+      }
     }
   }
 }

@@ -1,10 +1,12 @@
 import { RollerShutterActions } from '@core/commands/roller-shutter'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { Moving, Numeric } from '@core/sensor-reading-data-types'
+import { SomfyCurrentPosition, SomfySensorStatesEnum, SomfySensorValueTransformer, SomfyState } from './types'
 
 export const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, string> = {
   up: 'up',
+  open: 'up',
   down: 'close',
+  close: 'close',
   stop: 'stop',
   toPosition: 'setClosure',
 }
@@ -16,17 +18,17 @@ export const SENSOR_TYPE_MAPPERS: Record<
   {
     nameExtension: string
     measurementType: MeasurementTypeEnum
-    transformer: (value: SomfyEventValue) => Numeric | Moving
+    transformer: SomfySensorValueTransformer
   }
 > = {
   'core:LuminanceState': {
     nameExtension: '_illu',
     measurementType: 'illuminance',
-    transformer: value => ({
-      value: value as number,
-      formattedValue: (value as number).toFixed(0) + ' Lux',
+    transformer: ((value: SomfyState<number>) => ({
+      value: value.value,
+      formattedValue: value.value.toFixed(0) + ' Lux',
       unit: 'Lux',
-    }),
+    })) as SomfySensorValueTransformer,
   },
   'core:StatusState': undefined,
   'core:DiscreteRSSILevelState': undefined,
@@ -35,18 +37,20 @@ export const SENSOR_TYPE_MAPPERS: Record<
   'core:ClosureState': {
     nameExtension: '_closure',
     measurementType: 'closure',
-    transformer: value => ({
-      value: value as number,
-      formattedValue: (value as number).toFixed(0) + '%',
-      unit: '%',
-    }),
+    transformer: ((value: SomfyState<SomfyCurrentPosition>) => {
+      return {
+        value: value.value,
+        formattedValue: value.value.toFixed(0) + '%',
+        unit: '%',
+      }
+    }) as SomfySensorValueTransformer,
   },
   'core:OpenClosedState': undefined,
   'core:TargetClosureState': undefined,
   'core:MovingState': {
     nameExtension: '_moving',
     measurementType: 'moving',
-    transformer: value => value as Moving,
+    transformer: ((value: SomfyState<boolean>) => value.value) as SomfySensorValueTransformer,
   },
   'core:NameState': undefined,
   'core:Memorized1PositionState': undefined,
