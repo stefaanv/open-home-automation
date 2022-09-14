@@ -22,7 +22,7 @@ export type SomfyDevice = {
   deviceURL: string
   available: boolean
   type: number
-  states: SomfyState<SomfyEventValue>[]
+  states: SomfyState[]
   controllableName:
     | 'io:RollerShutterGenericIOComponent'
     | 'io:VerticalExteriorAwningIOComponent'
@@ -32,13 +32,13 @@ export type SomfyDevice = {
 
 export type SomfyCurrentPosition = number
 export type SomfyEventValue = number | SomfyCurrentPosition | boolean
-export type SomfyState<TValue extends SomfyEventValue> = { type: number; name: SomfyEventNamesEnum; value: TValue }
+export type SomfyState = { type: number; name: SomfyEventNamesEnum; value: SomfyEventValue }
 
-export type SomfyEvent<TValue extends SomfyEventValue> = {
+export type SomfyEvent = {
   deviceURL: string
-  deviceStates: Array<SomfyState<TValue>>
+  deviceStates: Array<SomfyState>
   name: SomfyEventNamesEnum
 }
 
 export type SomfyActuatorCommandTransformer = (state: Command) => any
-export type SomfySensorValueTransformer = (state: SomfyState<SomfyEventValue>) => SensorReadingValue
+export type SomfySensorValueTransformer = (state: SomfyState) => SensorReadingValue

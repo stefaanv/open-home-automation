@@ -36,8 +36,8 @@ type TahomaCommand = any
 @Injectable()
 export class TahomaInterfaceService {
   private readonly _axios: Axios
-  private readonly _sensorChannels = new SensorChannelList<string, SomfySensorValueTransformer>()
-  private readonly _actuatorChannels = new ActuatorChannelList<string, SomfyActuatorCommandTransformer>()
+  private readonly _sensorChannels = new SensorChannelList<string, SomfyState>()
+  private readonly _actuatorChannels = new ActuatorChannelList<string, any>()
 
   constructor(
     private readonly _log: LoggingService,
@@ -114,7 +114,7 @@ export class TahomaInterfaceService {
   }
 
   private async eventPoller(eventListenerId: string) {
-    const result = await this._axios.post<SomfyEvent<SomfyEventValue>[]>(`events/${eventListenerId}/fetch`, {})
+    const result = await this._axios.post<SomfyEvent[]>(`events/${eventListenerId}/fetch`, {})
     if (result.data.length > 0) {
       for await (const event of result.data) {
         await this.processSomfyEvent(event)
@@ -123,8 +123,8 @@ export class TahomaInterfaceService {
   }
 
   private async processSomfyState(
-    channel: SensorChannel<string, SomfySensorValueTransformer>,
-    state: SomfyState<SomfyEventValue>,
+    channel: SensorChannel<string, SomfyState>,
+    state: SomfyState,
   ): Promise<SensorReading<Numeric | Moving> | undefined> {
     const update: SensorReading<Numeric | Moving> = {
       time: new Date(),
@@ -136,7 +136,7 @@ export class TahomaInterfaceService {
     return update
   }
 
-  private async processSomfyEvent(event: SomfyEvent<SomfyEventValue>) {
+  private async processSomfyEvent(event: SomfyEvent) {
     if (event.name === 'DeviceStateChangedEvent')
       event.deviceStates.forEach(async state => {
         const channel = this._sensorChannels.get(event.deviceURL + '_' + state.name)

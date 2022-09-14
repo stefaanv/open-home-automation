@@ -1,5 +1,6 @@
 import { RollerShutterActions } from '@core/commands/roller-shutter'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
+import { Moving, Numeric } from '@core/sensor-reading-data-types'
 import { SomfyCurrentPosition, SomfySensorStatesEnum, SomfySensorValueTransformer, SomfyState } from './types'
 
 export const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, string> = {
@@ -24,11 +25,14 @@ export const SENSOR_TYPE_MAPPERS: Record<
   'core:LuminanceState': {
     nameExtension: '_illu',
     measurementType: 'illuminance',
-    transformer: ((value: SomfyState<number>) => ({
-      value: value.value,
-      formattedValue: value.value.toFixed(0) + ' Lux',
-      unit: 'Lux',
-    })) as SomfySensorValueTransformer,
+    transformer: (v: SomfyState) => {
+      const value = v.value as number
+      return {
+        value: value,
+        formattedValue: value.toFixed(0) + ' Lux',
+        unit: 'Lux',
+      }
+    },
   },
   'core:StatusState': undefined,
   'core:DiscreteRSSILevelState': undefined,
@@ -37,20 +41,21 @@ export const SENSOR_TYPE_MAPPERS: Record<
   'core:ClosureState': {
     nameExtension: '_closure',
     measurementType: 'closure',
-    transformer: ((value: SomfyState<SomfyCurrentPosition>) => {
+    transformer: (v: SomfyState) => {
+      const value = v.value as number
       return {
-        value: value.value,
-        formattedValue: value.value.toFixed(0) + '%',
+        value: value,
+        formattedValue: value.toFixed(0) + '%',
         unit: '%',
       }
-    }) as SomfySensorValueTransformer,
+    },
   },
   'core:OpenClosedState': undefined,
   'core:TargetClosureState': undefined,
   'core:MovingState': {
     nameExtension: '_moving',
     measurementType: 'moving',
-    transformer: ((value: SomfyState<boolean>) => value.value) as SomfySensorValueTransformer,
+    transformer: (v: SomfyState) => v.value as Moving,
   },
   'core:NameState': undefined,
   'core:Memorized1PositionState': undefined,

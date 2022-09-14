@@ -7,9 +7,10 @@ import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
 import {
   PhosconActuatorCommandTransformer,
+  PhosconCommand,
   PhosconDiscoveryItem,
   PhosconEvent,
-  PhosconSensorValueTransformer,
+  PhosconState,
 } from './type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
@@ -20,7 +21,6 @@ import { SensorReadingValue } from '@core/sensor-reading-data-types'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { SensorReading } from '@core/sensor-reading.type'
 import { ActuatorChannel } from '@core/channels/actuator-channel.type'
-import { SensorChannel } from '@core/channels/sensor-channel.type'
 import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
 import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
 
@@ -34,8 +34,8 @@ const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
-  private readonly _sensorChannels = new SensorChannelList<number, PhosconSensorValueTransformer>()
-  private readonly _actuatorChannels = new ActuatorChannelList<number, PhosconActuatorCommandTransformer>()
+  private readonly _sensorChannels = new SensorChannelList<number, PhosconState>()
+  private readonly _actuatorChannels = new ActuatorChannelList<number, PhosconCommand>()
   private _ignoreIds: number[] = []
   private _processingStarted = false
   private readonly _axios: Axios
@@ -121,7 +121,7 @@ export class PhosconInterfaceService {
             name,
             type: commandType,
             transformer,
-          } as ActuatorChannel<number, PhosconActuatorCommandTransformer>
+          } as ActuatorChannel<number, PhosconCommand>
 
           this._actuatorChannels.push(channel)
           this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${commandType} (id=${id})`)
@@ -194,7 +194,7 @@ export class PhosconInterfaceService {
             name,
             type: measurementType,
             transformer,
-          } as SensorChannel<number, PhosconSensorValueTransformer>
+          }
           this._sensorChannels.push(channel)
           this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
 
