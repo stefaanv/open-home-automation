@@ -6,13 +6,26 @@ export class ChannelListBase<
   TChannel extends SensorChannel<TUID> | ActuatorChannel<TUID>,
 > {
   private readonly _list: TChannel[] = []
+  private readonly _ignoreList: TUID[] = []
 
   public add(channel: TChannel) {
     this._list.push(channel)
   }
 
+  public addIgnore(arg: TUID | TUID[]) {
+    if (typeof arg === 'object') {
+      this._ignoreList.push(...arg)
+    } else {
+      this._ignoreList.push(arg)
+    }
+  }
+
   public get(uid: TUID): TChannel {
     return this._list.find(e => e.uid === uid)
+  }
+
+  public toIgnore(uid: TUID): boolean {
+    return this._ignoreList.includes(uid)
   }
 
   public getByName(name: string): TChannel {

@@ -31,6 +31,7 @@ const SENSOR_CONFIGURATION = 'phoscon.sensors'
 const ACTUATOR_CONFIGURATION = 'phoscon.actuators'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
+//TODO inkomende (mqtt) commando's valideren + foutmelding indien niet OK
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string

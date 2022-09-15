@@ -25,10 +25,6 @@ export type PhosconStateTypeName =
   | 'ZHASwitch'
   | 'On/Off plug-in unit'
 
-//TODO ignore lists naar config verplaatsen
-export const SENSOR_IGNORE_LIST = ['Range extender', 'Configuration', 'unknown', 'Daylight']
-export const ACTUATOR_IGNORE_LIST = ['Range extender', 'Configuration', 'Eethoek']
-
 const numericTransformer =
   (transformer: (state: PhosconState) => number, unit: string, subType: NumericMeasurementTypeEnum) =>
   (state: PhosconState) => {
@@ -90,7 +86,11 @@ export const SENSOR_TYPE_MAPPERS: Record<PhosconStateTypeName, PhosconSensorType
 export const ACTUATOR_TYPE_MAPPERS: Record<string, PhosconActuatorTypeMapper> = {
   'On/Off plug-in unit': {
     commandType: 'on-off',
-    transformer: cmd => ({ on: (cmd as OnOffCommand) === 'on' }),
+    transformer: cmd => {
+      const request: boolean = (cmd as OnOffCommand) === 'on'
+      const result = { on: request }
+      return result
+    },
   },
 }
 

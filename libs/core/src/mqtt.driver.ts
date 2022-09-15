@@ -49,7 +49,13 @@ export class MqttDriver {
   }
 
   private mqttReceived(topic: string, message: Buffer) {
-    const payload: Command = JSON.parse(message.toString('utf-8'))
+    //TODO validate incoming commands
+    let payload
+    try {
+      payload = JSON.parse(message.toString('utf-8'))
+    } catch (error) {
+      payload = message.toString('utf-8')
+    }
     const actuatorName = this._actuatorNameExtractor.exec(topic).groups['actuatorName']
     // this._log.debug(`received from ${topic} ${JSON.stringify(payload)}`)
 
