@@ -7,6 +7,17 @@ import { Command } from '@core/commands/command.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 
+export type PhosconStateTypeEnum = PhosconStateTypeName
+export type PhosconStateTypeName =
+  | 'ZHAPresence'
+  | 'ZHALightLevel'
+  | 'ZHATemperature'
+  | 'ZHAHumidity'
+  | 'ZHAOpenClose'
+  | 'ZHAAirQuality'
+  | 'ZHASwitch'
+  | 'On/Off plug-in unit'
+
 export type PhosconEvent = {
   e: string
   id: string
@@ -19,18 +30,19 @@ export type PhosconEvent = {
 }
 
 export type PhosconSensorDiscoveryItem = {
-  uid: number
   config: any
   ep: number
   etag: string
-  lastseen: string
   manufacturername: string
   modelid: string
   name: string
   state: any
   swversion: string
-  type: string
+  type: PhosconStateTypeEnum
   uniqueid: string
+
+  uid: number
+  lastseen: string
 }
 
 export type PhosconActuatorType = ''

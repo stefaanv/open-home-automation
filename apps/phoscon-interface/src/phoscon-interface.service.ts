@@ -14,6 +14,7 @@ import {
   PhosconSensorChannel,
   PhosconSensorChannelList,
   PhosconSensorTypeMapper,
+  PhosconStateTypeEnum,
 } from './type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
@@ -23,6 +24,7 @@ import { ChannelConfig, ChannelConfigRaw } from '@core/configuration/channel-con
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
+import { ChannelService, DiscoveredSensor } from '@core/channel-service/channel.service'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -45,6 +47,7 @@ export class PhosconInterfaceService {
     private readonly _log: LoggingService,
     private readonly _mqttDriver: MqttDriver,
     private readonly _config: ConfigService,
+    private readonly _channelService: ChannelService<number, any, any, any>,
   ) {
     // set log context
     this._log.setContext(PhosconInterfaceService.name)
@@ -147,6 +150,18 @@ export class PhosconInterfaceService {
     //TODO! nummering actuatoren en sensoren overlapt ! mogen dus niet samen gegooid worden !
     const discoveredSensors = await this._axios.get<PhosconDiscoveryItem[]>('sensors')
     const discoveredActuators = await this._axios.get<PhosconDiscoveryItem[]>('lights')
+    const discoveredSensors2 = await this._axios.get<Record<number, PhosconDiscoveryItem>>('sensors')
+    const discoveredActuators2 = await this._axios.get<Record<number, PhosconDiscoveryItem>>('lights')
+    const discoveredBoth2 = { ...discoveredActuators2.data, ...discoveredSensors2.data }
+    const discoveredBoth2Processed = Object.getOwnPropertyNames(discoveredBoth2).map(k => {
+      const sensor = discoveredBoth2[k] as PhosconDiscoveryItem
+      return {
+        key: parseInt(k),
+        name: sensor.name,
+        foreignTypeName: sensor.type,
+      } as DiscoveredSensor<number, PhosconStateTypeEnum>
+    })
+    this._channelService.discoverSensors(discoveredBoth2Processed)
     const discoveredDevices = { ...discoveredSensors.data, ...discoveredActuators.data }
 
     // construct `selected` and `to ignore` id lists

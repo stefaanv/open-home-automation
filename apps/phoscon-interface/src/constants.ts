@@ -10,20 +10,11 @@ import {
   PhosconReportedValue,
   PhosconSensorTypeMapper,
   PhosconState,
+  PhosconStateTypeName,
   PresenceState,
   SwitchState,
   TemperatureState,
 } from './type'
-
-export type PhosconStateTypeName =
-  | 'ZHAPresence'
-  | 'ZHALightLevel'
-  | 'ZHATemperature'
-  | 'ZHAHumidity'
-  | 'ZHAOpenClose'
-  | 'ZHAAirQuality'
-  | 'ZHASwitch'
-  | 'On/Off plug-in unit'
 
 const numericTransformer =
   (transformer: (state: PhosconState) => number, unit: string, subType: NumericMeasurementTypeEnum) =>
