@@ -1,4 +1,5 @@
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
+import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
 import nextAvailablePort from '@core/helpers/port-available'
 import { LoggingService } from '@core/logging.service'
@@ -12,6 +13,8 @@ async function bootstrap() {
   const logger = app.get(LoggingService)
   SensorChannel.log = logger
   ActuatorChannel.log = logger
+  SensorChannelList.log = logger
+  ActuatorChannelList.log = logger
 
   const port = await nextAvailablePort()
   logger.setContext('main')

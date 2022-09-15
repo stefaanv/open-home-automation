@@ -58,7 +58,6 @@ export type SomfySensorTypeMapper = {
   transformer: SomfySensorValueTransformer
 }
 export type SomfyActuatorTypeMapper = {
-  nameExtension: string
   commandType: CommandTypeEnum
   transformer: SomfyActuatorCommandTransformer
 }

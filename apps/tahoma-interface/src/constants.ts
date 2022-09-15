@@ -1,7 +1,15 @@
-import { RollerShutterActions } from '@core/commands/roller-shutter'
+import { ActuatorChannel } from '@core/channels/actuator-channel.class'
+import { CommandTypeEnum } from '@core/commands/command-type.enum'
+import { RollerShutterActions, RollerShutterCommand } from '@core/commands/roller-shutter'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { Moving } from '@core/sensor-reading-data-types'
-import { SomfySensorStatesEnum, SomfySensorTypeMapper, SomfySensorValueTransformer, SomfyState } from './types'
+import {
+  SomfyActuatorChannel,
+  SomfyActuatorTypeMapper,
+  SomfySensorStatesEnum,
+  SomfySensorTypeMapper,
+  SomfyState,
+} from './types'
 
 export const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, string> = {
   up: 'up',
@@ -13,6 +21,15 @@ export const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, str
 }
 export const ACTUATOR_NAME_TRANSLATION = { 'living zuid': 'rl_living_zuid' }
 export const SENSOR_NAME_TRANSLATION = { 'Sun sensor': 'buiten_oost_lumi', 'living zuid': 'rl_living_zuid' }
+
+export const ACTUATOR_TYPE_MAPPERS: Record<CommandTypeEnum, SomfyActuatorTypeMapper> = {
+  'on-off': undefined,
+  'roller-shutter': {
+    transformer: (cmd: RollerShutterCommand, channel: SomfyActuatorChannel) => {
+      return tahomaRollerShutterCommandCreator(channel.uid, cmd.action, cmd.position)
+    },
+  } as SomfyActuatorTypeMapper,
+}
 
 export const SENSOR_TYPE_MAPPERS: Record<SomfySensorStatesEnum, SomfySensorTypeMapper> = {
   'core:LuminanceState': {

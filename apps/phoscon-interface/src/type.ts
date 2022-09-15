@@ -62,50 +62,45 @@ export type PhosconAttr = {
   uniqueid: string
 }
 
-export type PhosconState =
-  | PresenceState
-  | LightLevelState
-  | TemperatureState
-  | HumidityState
-  | OpenClosedState
-  | SwitchState
+export type PhosconState = PhosconBaseState &
+  (PresenceState | LightLevelState | TemperatureState | HumidityState | OpenClosedState | SwitchState)
 
-export type BaseState = {
+export type PhosconBaseState = {
   lastupdated: string //date
 }
 
 export type PresenceState = {
   presence: boolean | undefined
   on: boolean | undefined
-} & BaseState
+}
 
 export type SwitchState = {
   buttonevent: number
-} & BaseState
+}
 
 export type LightLevelState = {
   dark: boolean
   daylight: boolean
   lightlevel: number
   lux: number
-} & BaseState
+}
 
 export type TemperatureState = {
   temperature: number
-} & BaseState
+}
 
 export type HumidityState = {
   humidity: number
-} & BaseState
+}
 
 export type OpenClosedState = {
   open: boolean | undefined
   on: boolean | undefined
-} & BaseState
+}
 
 export type OnOffState = {
   on: boolean | undefined
-} & BaseState
+}
 
 export type PhosconReportedValue = string | number | boolean | undefined
 
@@ -127,7 +122,6 @@ export type PhosconSensorTypeMapper = {
   transformer: PhosconSensorValueTransformer
 }
 export type PhosconActuatorTypeMapper = {
-  nameExtension: string
   commandType: CommandTypeEnum
   transformer: PhosconActuatorCommandTransformer
 }

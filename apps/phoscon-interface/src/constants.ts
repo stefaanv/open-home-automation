@@ -1,18 +1,14 @@
-import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { OnOffCommand } from '@core/commands/on-off.type'
 import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from '@core/measurement-type.enum'
 import { Numeric, OnOff, OpenClosed, Presence, SwitchPressed } from '@core/sensor-reading-data-types'
-import { template } from 'handlebars'
 import {
   HumidityState,
   LightLevelState,
   OnOffState,
   OpenClosedState,
-  PhosconActuatorCommandTransformer,
   PhosconActuatorTypeMapper,
   PhosconReportedValue,
   PhosconSensorTypeMapper,
-  PhosconSensorValueTransformer,
   PhosconState,
   PresenceState,
   SwitchState,
@@ -93,7 +89,6 @@ export const SENSOR_TYPE_MAPPERS: Record<PhosconStateTypeName, PhosconSensorType
 
 export const ACTUATOR_TYPE_MAPPERS: Record<string, PhosconActuatorTypeMapper> = {
   'On/Off plug-in unit': {
-    nameExtension: '_relay',
     commandType: 'on-off',
     transformer: cmd => ({ on: (cmd as OnOffCommand) === 'on' }),
   },

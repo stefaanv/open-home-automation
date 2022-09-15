@@ -122,13 +122,8 @@ export class TahomaInterfaceService {
   private async processSomfyEvent(event: SomfyEvent) {
     if (event.name === 'DeviceStateChangedEvent')
       event.deviceStates.forEach(async state => {
-        const channel = this._sensorChannels.get(event.deviceURL + '_' + state.name)
-        if (channel) {
-          const update = await channel.transformToSensorReading(state, 'Tahoma', new Date())
-          this._mqttDriver.sendMeasurement(update)
-        } else {
-          console.log(`channel undefined for event ${state.name}`)
-        }
+        const uid = event.deviceURL + '_' + state.name
+        this._sensorChannels.sendUpdate(this._mqttDriver, uid, state, 'tahoma')
       })
   }
 
@@ -136,6 +131,10 @@ export class TahomaInterfaceService {
   // testen met topic = `oha2/command/rl_living_zuid`, data = `{"action":"close"}` of `{"command":{"action":"toPosition","position":10}}`
   private async mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
+    const [channel, command] = this._actuatorChannels.toForeign(actuatorName, cmd)
+    const result = await this._axios.post('exec/apply', command)
+    console.log(result.statusText)
+    /*
     const actuator = this._actuatorChannels.getByName(actuatorName)
     if (!actuator) {
       this._log.warn(`${actuatorName} is not defined in the actuator list`)
@@ -161,5 +160,6 @@ export class TahomaInterfaceService {
         }
       }
     }
+  */
   }
 }

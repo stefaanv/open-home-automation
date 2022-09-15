@@ -116,11 +116,11 @@ export class PhosconInterfaceService {
           this._log.warn(`Unknown actuator type ${discovered.type}, full payload below`)
           console.log(discovered)
         } else {
-          const { nameExtension, commandType, transformer } = typeMap
-          const channel = new PhosconActuatorChannel(id, actuatorName + nameExtension, commandType, transformer)
+          const { commandType, transformer } = typeMap
+          const channel = new PhosconActuatorChannel(id, actuatorName, commandType, transformer)
 
           this._actuatorChannels.add(channel)
-          this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${commandType} (id=${id})`)
+          this._log.log(`New actuator defined "${actuatorName}", type=${commandType} (id=${id})`)
         }
       }
     }
@@ -132,8 +132,8 @@ export class PhosconInterfaceService {
 
   private mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
-    const actuatorChannel = this._actuatorChannels.getByName(actuatorName)
-    this._axios.put(`lights/${actuatorChannel.uid}/state`, actuatorChannel.transformToForeignCommand(cmd))
+    const [channel, command] = this._actuatorChannels.toForeign(actuatorName, cmd)
+    this._axios.put(`lights/${channel.uid}/state`, command)
   }
 
   private async configureSensors() {
@@ -214,19 +214,8 @@ export class PhosconInterfaceService {
         //TODO transformer voor presence toevoegen
         //TODO unit toevoegen aan SensorReading
         //TODO stringValue toevoegen aan SensorReading
-        const state = payload.state
-        const channel = this._sensorChannels.get(parseInt(payload.id))
-        if (payload.state && payload?.state['buttonevent']) console.log(payload.state)
-
-        if (channel) {
-          const update = channel.transformToSensorReading(state, 'phoscon', now)
-          this._mqttDriver.sendMeasurement(update)
-        } else {
-          this._log.warn(
-            `VALUE of unknown sensor (id=${payload.id}), value=${JSON.stringify(state)}, full payload below`,
-          )
-          console.log(payload)
-        }
+        const uid = parseInt(payload.id)
+        this._sensorChannels.sendUpdate(this._mqttDriver, uid, payload.state, 'phoscon', now)
       }
     } catch (error) {
       this._log.error(JSON.stringify(error))
