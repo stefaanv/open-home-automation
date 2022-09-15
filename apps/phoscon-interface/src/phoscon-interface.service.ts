@@ -6,10 +6,14 @@ import WebSocket from 'ws'
 import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
 import {
+  PhosconActuatorChannel,
+  PhosconActuatorChannelList,
   PhosconActuatorCommandTransformer,
   PhosconCommand,
   PhosconDiscoveryItem,
   PhosconEvent,
+  PhosconSensorChannel,
+  PhosconSensorChannelList,
   PhosconState,
 } from './type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
@@ -33,8 +37,8 @@ const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
-  private readonly _sensorChannels = new SensorChannelList<number, PhosconState>()
-  private readonly _actuatorChannels = new ActuatorChannelList<number, PhosconCommand>()
+  private readonly _sensorChannels = new PhosconSensorChannelList()
+  private readonly _actuatorChannels = new PhosconActuatorChannelList()
   private _ignoreIds: number[] = []
   private _processingStarted = false
   private readonly _axios: Axios
@@ -117,12 +121,7 @@ export class PhosconInterfaceService {
         } else {
           const [nameExtension, type, transformer] = typeMap
           const name = actuatorName + nameExtension
-          const channel = new ActuatorChannel<number, PhosconCommand>(
-            id,
-            actuatorName + nameExtension,
-            type,
-            transformer,
-          )
+          const channel = new PhosconActuatorChannel(id, actuatorName + nameExtension, type, transformer)
 
           this._actuatorChannels.push(channel)
           this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${type} (id=${id})`)
@@ -188,7 +187,7 @@ export class PhosconInterfaceService {
         } else {
           const { nameExtension, measurementType, transformer } = typeMap
           const name = sensorName + nameExtension
-          const channel = new SensorChannel<number, PhosconState>(id, name, measurementType, transformer)
+          const channel = new PhosconSensorChannel(id, name, measurementType, transformer)
           this._sensorChannels.push(channel)
           this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
 

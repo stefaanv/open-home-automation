@@ -1,3 +1,7 @@
+import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
+import { ActuatorChannel } from '@core/channels/actuator-channel.class'
+import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
+import { SensorChannel } from '@core/channels/sensor-channel.class'
 import { Command } from '@core/commands/command.type'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 
@@ -109,5 +113,9 @@ export type PhosconOnOffCommand = {
   on: boolean
 }
 export type PhosconCommand = PhosconOnOffCommand
+export class PhosconSensorChannel extends SensorChannel<number> {}
+export class PhosconActuatorChannel extends ActuatorChannel<number> {}
+export class PhosconSensorChannelList extends SensorChannelList<number> {}
+export class PhosconActuatorChannelList extends ActuatorChannelList<number> {}
 export type PhosconActuatorCommandTransformer = (state: Command) => PhosconCommand
 export type PhosconSensorValueTransformer = (state: PhosconState) => SensorReadingValue

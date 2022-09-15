@@ -1,7 +1,7 @@
 import { RollerShutterActions } from '@core/commands/roller-shutter'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { Moving, Numeric } from '@core/sensor-reading-data-types'
-import { SomfyCurrentPosition, SomfySensorStatesEnum, SomfySensorValueTransformer, SomfyState } from './types'
+import { Moving } from '@core/sensor-reading-data-types'
+import { SomfySensorStatesEnum, SomfySensorValueTransformer, SomfyState } from './types'
 
 export const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, string> = {
   up: 'up',
@@ -25,7 +25,7 @@ export const SENSOR_TYPE_MAPPERS: Record<
   'core:LuminanceState': {
     nameExtension: '_illu',
     measurementType: 'illuminance',
-    transformer: (v: SomfyState) => {
+    transformer: v => {
       const value = v.value as number
       return {
         value: value,

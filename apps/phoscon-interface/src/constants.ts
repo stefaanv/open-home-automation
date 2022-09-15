@@ -1,15 +1,7 @@
-import { Command } from '@core/commands/command.type'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { OnOffCommand } from '@core/commands/on-off.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import {
-  Numeric,
-  OnOff,
-  OpenClosed,
-  Presence,
-  SensorReadingValue,
-  SwitchPressed,
-} from '@core/sensor-reading-data-types'
+import { Numeric, OnOff, OpenClosed, Presence, SwitchPressed } from '@core/sensor-reading-data-types'
 import {
   HumidityState,
   LightLevelState,

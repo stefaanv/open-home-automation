@@ -7,24 +7,13 @@ import Handlebars from 'handlebars'
 import https from 'https'
 import { Command } from '@core/commands/command.type'
 import { RollerShutterCommand } from '@core/commands/roller-shutter'
-import { Moving, Numeric } from '@core/sensor-reading-data-types'
-import { SensorReading } from '@core/sensor-reading.type'
 import {
   ACTUATOR_NAME_TRANSLATION,
   SENSOR_NAME_TRANSLATION,
   SENSOR_TYPE_MAPPERS,
   tahomaRollerShutterCommandCreator,
 } from './constants'
-import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
-import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
-import {
-  SomfyActuatorCommandTransformer,
-  SomfyDevice,
-  SomfyEvent,
-  SomfyEventValue,
-  SomfySensorValueTransformer,
-  SomfyState,
-} from './types'
+import { SomfyDevice, SomfyEvent, SomfySensorChannel, SomfySensorChannelList, SomfyActuatorChannelList } from './types'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 
@@ -32,13 +21,11 @@ const API_BASE_URL_KEY = 'tahoma.interfaceSpecific.baseUrl'
 const API_AUTHORIZATION_TOKEN_KEY = 'tahoma.interfaceSpecific.authorizationToken'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
-type TahomaCommand = any
-
 @Injectable()
 export class TahomaInterfaceService {
   private readonly _axios: Axios
-  private readonly _sensorChannels = new SensorChannelList<string, SomfyState>()
-  private readonly _actuatorChannels = new ActuatorChannelList<string, any>()
+  private readonly _sensorChannels = new SomfySensorChannelList()
+  private readonly _actuatorChannels = new SomfyActuatorChannelList()
 
   constructor(
     private readonly _log: LoggingService,
@@ -78,12 +65,7 @@ export class TahomaInterfaceService {
           const cmd = command as RollerShutterCommand
           return tahomaRollerShutterCommandCreator(d.deviceURL, cmd.action, cmd.position)
         }
-        const actuatorChannel = new ActuatorChannel<string, any>(
-          d.deviceURL,
-          actuatorName,
-          'roller-shutter',
-          transformer,
-        )
+        const actuatorChannel = new ActuatorChannel<string>(d.deviceURL, actuatorName, 'roller-shutter', transformer)
         this._actuatorChannels.push(actuatorChannel)
       })
 
@@ -100,7 +82,7 @@ export class TahomaInterfaceService {
           //TODO onderstaande nog in constant bestand steken zoals bij de Phoscon interface
           if (SENSOR_TYPE_MAPPERS[state.name]) {
             const { nameExtension, measurementType, transformer } = SENSOR_TYPE_MAPPERS[state.name]
-            const channel = new SensorChannel<string, SomfyState>(
+            const channel = new SomfySensorChannel(
               device.deviceURL + '_' + state.name,
               sensorNamePrefix + nameExtension,
               measurementType,

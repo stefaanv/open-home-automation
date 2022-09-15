@@ -4,20 +4,16 @@ import { SensorReadingValue } from '@core/sensor-reading-data-types'
 import { SensorReading } from '@core/sensor-reading.type'
 import { ChannelBase } from './channel-base.class'
 
-export type SensorChannelTransformer<TIn = any> = (state: TIn) => SensorReadingValue
+export type SensorChannelTransformer = (state: any) => SensorReadingValue
 
-export class SensorChannel<TUID extends number | string, TIn = any> extends ChannelBase<
-  TUID,
-  MeasurementTypeEnum,
-  SensorChannelTransformer<TIn>
-> {
+export class SensorChannel<TUID extends number | string> extends ChannelBase<TUID, MeasurementTypeEnum> {
   static log: LoggingService
 
-  constructor(uid: TUID, name: string, type: MeasurementTypeEnum, transformer: SensorChannelTransformer<TIn>) {
+  constructor(uid: TUID, name: string, type: MeasurementTypeEnum, transformer: SensorChannelTransformer) {
     super(uid, name, type, transformer)
   }
 
-  getSensorReading(state: TIn, interfaceName: string, time: Date): SensorReading {
+  getSensorReading(state: unknown, interfaceName: string, time: Date): SensorReading {
     if (!this.transformer) {
       SensorChannel.log.warn(`Transformer not defined for mapper ${this.name}`)
     }

@@ -1,3 +1,7 @@
+import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
+import { ActuatorChannel } from '@core/channels/actuator-channel.class'
+import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
+import { SensorChannel } from '@core/channels/sensor-channel.class'
 import { Command } from '@core/commands/command.type'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 
@@ -40,5 +44,9 @@ export type SomfyEvent = {
   name: SomfyEventNamesEnum
 }
 
+export class SomfySensorChannel extends SensorChannel<string> {}
+export class SomfyActuatorChannel extends ActuatorChannel<string> {}
+export class SomfySensorChannelList extends SensorChannelList<string> {}
+export class SomfyActuatorChannelList extends ActuatorChannelList<string> {}
 export type SomfyActuatorCommandTransformer = (state: Command) => any
 export type SomfySensorValueTransformer = (state: SomfyState) => SensorReadingValue
