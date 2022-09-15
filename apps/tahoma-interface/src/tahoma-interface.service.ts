@@ -66,7 +66,7 @@ export class TahomaInterfaceService {
           return tahomaRollerShutterCommandCreator(d.deviceURL, cmd.action, cmd.position)
         }
         const actuatorChannel = new ActuatorChannel<string>(d.deviceURL, actuatorName, 'roller-shutter', transformer)
-        this._actuatorChannels.push(actuatorChannel)
+        this._actuatorChannels.add(actuatorChannel)
       })
 
     devices.data
@@ -88,7 +88,7 @@ export class TahomaInterfaceService {
               measurementType,
               transformer,
             )
-            this._sensorChannels.push(channel)
+            this._sensorChannels.add(channel)
           }
         })
       })

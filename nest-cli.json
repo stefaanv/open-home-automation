@@ -3,10 +3,10 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "apps/tahoma-interface/src",
   "monorepo": true,
-  "root": "apps/tahoma-interface",
+  "root": "apps/phoscon-interface",
   "compilerOptions": {
     "webpack": false,
-    "tsConfigPath": "apps/tahoma-interface/tsconfig.app.json",
+    "tsConfigPath": "apps/phoscon-interface/tsconfig.app.json",
     "deleteOutDir": true,
     "assets": [
       "**/*.json"

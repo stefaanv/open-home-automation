@@ -8,13 +8,10 @@ import Handlebars from 'handlebars'
 import {
   PhosconActuatorChannel,
   PhosconActuatorChannelList,
-  PhosconActuatorCommandTransformer,
-  PhosconCommand,
   PhosconDiscoveryItem,
   PhosconEvent,
   PhosconSensorChannel,
   PhosconSensorChannelList,
-  PhosconState,
 } from './type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
@@ -23,8 +20,6 @@ import { Command } from '@core/commands/command.type'
 import { ChannelConfig, ChannelConfigRaw } from '@core/configuration/channel-config-base.class'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
-import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
-import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
@@ -123,7 +118,7 @@ export class PhosconInterfaceService {
           const name = actuatorName + nameExtension
           const channel = new PhosconActuatorChannel(id, actuatorName + nameExtension, type, transformer)
 
-          this._actuatorChannels.push(channel)
+          this._actuatorChannels.add(channel)
           this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${type} (id=${id})`)
         }
       }
@@ -188,7 +183,7 @@ export class PhosconInterfaceService {
           const { nameExtension, measurementType, transformer } = typeMap
           const name = sensorName + nameExtension
           const channel = new PhosconSensorChannel(id, name, measurementType, transformer)
-          this._sensorChannels.push(channel)
+          this._sensorChannels.add(channel)
           this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
 
           // Process initial state

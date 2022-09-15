@@ -7,7 +7,7 @@ export class ChannelListBase<
 > {
   private readonly _list: TChannel[] = []
 
-  public push(channel: TChannel) {
+  public add(channel: TChannel) {
     this._list.push(channel)
   }
 
