@@ -53,9 +53,6 @@ export class TahomaInterfaceService {
   }
 
   async discover() {
-    SensorChannel.log = this._log
-    ActuatorChannel.log = this._log
-
     const devices = await this._axios.get<SomfyDevice[]>('setup/devices')
     devices.data
       .filter(d => d.controllableName === 'io:RollerShutterGenericIOComponent')
