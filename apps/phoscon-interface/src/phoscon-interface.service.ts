@@ -115,7 +115,6 @@ export class PhosconInterfaceService {
           console.log(discovered)
         } else {
           const [nameExtension, type, transformer] = typeMap
-          const name = actuatorName + nameExtension
           const channel = new PhosconActuatorChannel(id, actuatorName + nameExtension, type, transformer)
 
           this._actuatorChannels.add(channel)
