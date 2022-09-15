@@ -124,7 +124,7 @@ export class TahomaInterfaceService {
       event.deviceStates.forEach(async state => {
         const channel = this._sensorChannels.get(event.deviceURL + '_' + state.name)
         if (channel) {
-          const update = await channel.getSensorReading(state, 'Tahoma', new Date())
+          const update = await channel.transformToSensorReading(state, 'Tahoma', new Date())
           this._mqttDriver.sendMeasurement(update)
         } else {
           console.log(`channel undefined for event ${state.name}`)

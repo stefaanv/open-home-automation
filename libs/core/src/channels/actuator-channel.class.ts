@@ -11,7 +11,7 @@ export class ActuatorChannel<TUID extends number | string> extends ChannelBase<T
   constructor(uid: TUID, name: string, type: CommandTypeEnum, transformer: ActuatorChannelTransformer) {
     super(uid, name, type, transformer)
   }
-  getCommand(command: Command): any {
+  transformToForeignCommand(command: Command): any {
     return this.transformer(command)
   }
 }

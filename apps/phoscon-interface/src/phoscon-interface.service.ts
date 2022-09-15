@@ -133,7 +133,7 @@ export class PhosconInterfaceService {
   private mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
     const actuatorChannel = this._actuatorChannels.getByName(actuatorName)
-    this._axios.put(`lights/${actuatorChannel.uid}/state`, actuatorChannel.getCommand(cmd))
+    this._axios.put(`lights/${actuatorChannel.uid}/state`, actuatorChannel.transformToForeignCommand(cmd))
   }
 
   private async configureSensors() {
@@ -219,7 +219,7 @@ export class PhosconInterfaceService {
         if (payload.state && payload?.state['buttonevent']) console.log(payload.state)
 
         if (channel) {
-          const update = channel.getSensorReading(state, 'phoscon', now)
+          const update = channel.transformToSensorReading(state, 'phoscon', now)
           this._mqttDriver.sendMeasurement(update)
         } else {
           this._log.warn(
