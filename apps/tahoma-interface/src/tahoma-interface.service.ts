@@ -25,8 +25,8 @@ import {
   SomfySensorValueTransformer,
   SomfyState,
 } from './types'
-import { SensorChannel } from '@core/channels/sensor-channel.type'
-import { ActuatorChannel } from '@core/channels/actuator-channel.type'
+import { SensorChannel } from '@core/channels/sensor-channel.class'
+import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 
 const API_BASE_URL_KEY = 'tahoma.interfaceSpecific.baseUrl'
 const API_AUTHORIZATION_TOKEN_KEY = 'tahoma.interfaceSpecific.authorizationToken'

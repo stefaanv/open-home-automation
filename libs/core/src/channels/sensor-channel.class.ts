@@ -2,7 +2,7 @@ import { LoggingService } from '@core/logging.service'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 import { SensorReading } from '@core/sensor-reading.type'
-import { ChannelBase } from './channel-base.type'
+import { ChannelBase } from './channel-base.class'
 
 export type SensorChannelTransformer<TIn = any> = (state: TIn) => SensorReadingValue
 

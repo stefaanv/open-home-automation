@@ -1,7 +1,7 @@
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { Command } from '@core/commands/command.type'
 import { LoggingService } from '@core/logging.service'
-import { ChannelBase } from './channel-base.type'
+import { ChannelBase } from './channel-base.class'
 
 export type ActuatorChannelTransformer<TOut = any> = (cmd: Command) => TOut
 

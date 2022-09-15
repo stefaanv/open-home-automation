@@ -1,5 +1,5 @@
-import { ActuatorChannel } from './actuator-channel.type'
-import { SensorChannel } from './sensor-channel.type'
+import { ActuatorChannel } from './actuator-channel.class'
+import { SensorChannel } from './sensor-channel.class'
 
 export class ChannelListBase<
   TUID extends string | number,
