@@ -14,12 +14,12 @@ import {
   tahomaRollerShutterCommandCreator,
 } from './constants'
 import {
-  SomfyDevice,
-  SomfyEvent,
-  SomfySensorChannel,
-  SomfySensorChannelList,
-  SomfyActuatorChannelList,
-  SomfySensorTypeMapper,
+  TahomaDevice,
+  TahomaEvent,
+  TahomaSensorChannel,
+  TahomaSensorChannelList,
+  TahomaActuatorChannelList,
+  TahomaSensorTypeMapper,
 } from './types'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
@@ -31,8 +31,8 @@ const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 @Injectable()
 export class TahomaInterfaceService {
   private readonly _axios: Axios
-  private readonly _sensorChannels = new SomfySensorChannelList()
-  private readonly _actuatorChannels = new SomfyActuatorChannelList()
+  private readonly _sensorChannels = new TahomaSensorChannelList()
+  private readonly _actuatorChannels = new TahomaActuatorChannelList()
 
   constructor(
     private readonly _log: LoggingService,
@@ -60,7 +60,7 @@ export class TahomaInterfaceService {
   }
 
   async discover() {
-    const devices = await this._axios.get<SomfyDevice[]>('setup/devices')
+    const devices = await this._axios.get<TahomaDevice[]>('setup/devices')
     devices.data
       .filter(d => d.controllableName === 'io:RollerShutterGenericIOComponent')
       .forEach(d => {
@@ -80,14 +80,14 @@ export class TahomaInterfaceService {
           ['io:RollerShutterGenericIOComponent', 'io:LightIOSystemSensor'].includes(d.controllableName),
       )
       .forEach(device => {
-        const sensorNamePrefix: SomfySensorTypeMapper = SENSOR_NAME_TRANSLATION[device.label]!
+        const sensorNamePrefix: TahomaSensorTypeMapper = SENSOR_NAME_TRANSLATION[device.label]!
         device.states.forEach(state => {
           // alle statussen overlopen, 1 device kan meerdere sensoren / actuatoren vertegenwoordigen
           //TODO onderstaande nog in constant bestand steken zoals bij de Phoscon interface
           if (SENSOR_TYPE_MAPPERS[state.name]) {
-            const { nameExtension, measurementType, transformer }: SomfySensorTypeMapper =
+            const { nameExtension, measurementType, transformer }: TahomaSensorTypeMapper =
               SENSOR_TYPE_MAPPERS[state.name]
-            const channel = new SomfySensorChannel(
+            const channel = new TahomaSensorChannel(
               device.deviceURL + '_' + state.name,
               sensorNamePrefix + nameExtension,
               measurementType,
@@ -111,15 +111,15 @@ export class TahomaInterfaceService {
   }
 
   private async eventPoller(eventListenerId: string) {
-    const result = await this._axios.post<SomfyEvent[]>(`events/${eventListenerId}/fetch`, {})
+    const result = await this._axios.post<TahomaEvent[]>(`events/${eventListenerId}/fetch`, {})
     if (result.data.length > 0) {
       for await (const event of result.data) {
-        await this.processSomfyEvent(event)
+        await this.processTahomaEvent(event)
       }
     }
   }
 
-  private async processSomfyEvent(event: SomfyEvent) {
+  private async processTahomaEvent(event: TahomaEvent) {
     if (event.name === 'DeviceStateChangedEvent')
       event.deviceStates.forEach(async state => {
         const uid = event.deviceURL + '_' + state.name

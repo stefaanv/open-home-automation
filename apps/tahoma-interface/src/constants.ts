@@ -4,11 +4,11 @@ import { RollerShutterActions, RollerShutterCommand } from '@core/commands/rolle
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { Moving } from '@core/sensor-reading-data-types'
 import {
-  SomfyActuatorChannel,
-  SomfyActuatorTypeMapper,
-  SomfySensorStatesEnum,
-  SomfySensorTypeMapper,
-  SomfyState,
+  TahomaActuatorChannel,
+  TahomaActuatorTypeMapper,
+  TahomaSensorStatesEnum,
+  TahomaSensorTypeMapper,
+  TahomaState,
 } from './types'
 
 export const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, string> = {
@@ -22,16 +22,16 @@ export const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, str
 export const ACTUATOR_NAME_TRANSLATION = { 'living zuid': 'rl_living_zuid' }
 export const SENSOR_NAME_TRANSLATION = { 'Sun sensor': 'buiten_oost_lumi', 'living zuid': 'rl_living_zuid' }
 
-export const ACTUATOR_TYPE_MAPPERS: Record<CommandTypeEnum, SomfyActuatorTypeMapper> = {
+export const ACTUATOR_TYPE_MAPPERS: Record<CommandTypeEnum, TahomaActuatorTypeMapper> = {
   'on-off': undefined,
   'roller-shutter': {
-    transformer: (cmd: RollerShutterCommand, channel: SomfyActuatorChannel) => {
+    transformer: (cmd: RollerShutterCommand, channel: TahomaActuatorChannel) => {
       return tahomaRollerShutterCommandCreator(channel.uid, cmd.action, cmd.position)
     },
-  } as SomfyActuatorTypeMapper,
+  } as TahomaActuatorTypeMapper,
 }
 
-export const SENSOR_TYPE_MAPPERS: Record<SomfySensorStatesEnum, SomfySensorTypeMapper> = {
+export const SENSOR_TYPE_MAPPERS: Record<TahomaSensorStatesEnum, TahomaSensorTypeMapper> = {
   'core:LuminanceState': {
     nameExtension: '_illu',
     measurementType: 'illuminance' as MeasurementTypeEnum,
@@ -52,7 +52,7 @@ export const SENSOR_TYPE_MAPPERS: Record<SomfySensorStatesEnum, SomfySensorTypeM
   'core:ClosureState': {
     nameExtension: '_closure',
     measurementType: 'closure' as MeasurementTypeEnum,
-    transformer: (v: SomfyState) => {
+    transformer: (v: TahomaState) => {
       const value = v.value as number
       return {
         value: value,
@@ -67,7 +67,7 @@ export const SENSOR_TYPE_MAPPERS: Record<SomfySensorStatesEnum, SomfySensorTypeM
   'core:MovingState': {
     nameExtension: '_moving',
     measurementType: 'moving' as MeasurementTypeEnum,
-    transformer: (v: SomfyState) => v.value as Moving,
+    transformer: (v: TahomaState) => v.value as Moving,
   },
   'core:NameState': undefined,
   'core:Memorized1PositionState': undefined,

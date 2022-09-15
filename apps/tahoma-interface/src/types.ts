@@ -7,7 +7,7 @@ import { Command } from '@core/commands/command.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 
-export type SomfySensorStatesEnum =
+export type TahomaSensorStatesEnum =
   | 'core:LuminanceState'
   | 'core:StatusState'
   | 'core:DiscreteRSSILevelState'
@@ -20,15 +20,15 @@ export type SomfySensorStatesEnum =
   | 'core:NameState'
   | 'core:Memorized1PositionState'
 
-export type SomfyEventNamesEnum = 'DeviceStateChangedEvent'
+export type TahomaEventNamesEnum = 'DeviceStateChangedEvent'
 
-export type SomfyDevice = {
+export type TahomaDevice = {
   name: string | undefined
   label: string
   deviceURL: string
   available: boolean
   type: number
-  states: SomfyState[]
+  states: TahomaState[]
   controllableName:
     | 'io:RollerShutterGenericIOComponent'
     | 'io:VerticalExteriorAwningIOComponent'
@@ -36,28 +36,28 @@ export type SomfyDevice = {
     | 'io:LightIOSystemSensor'
 }
 
-export type SomfyCurrentPosition = number
-export type SomfyEventValue = number | SomfyCurrentPosition | boolean
-export type SomfyState = { type: number; name: SomfyEventNamesEnum; value: SomfyEventValue }
+export type TahomaCurrentPosition = number
+export type TahomaEventValue = number | TahomaCurrentPosition | boolean
+export type TahomaState = { type: number; name: TahomaEventNamesEnum; value: TahomaEventValue }
 
-export type SomfyEvent = {
+export type TahomaEvent = {
   deviceURL: string
-  deviceStates: Array<SomfyState>
-  name: SomfyEventNamesEnum
+  deviceStates: Array<TahomaState>
+  name: TahomaEventNamesEnum
 }
 
-export class SomfySensorChannel extends SensorChannel<string> {}
-export class SomfyActuatorChannel extends ActuatorChannel<string> {}
-export class SomfySensorChannelList extends SensorChannelList<string> {}
-export class SomfyActuatorChannelList extends ActuatorChannelList<string> {}
-export type SomfyActuatorCommandTransformer = (state: Command) => any
-export type SomfySensorValueTransformer = (state: SomfyState) => SensorReadingValue
-export type SomfySensorTypeMapper = {
+export class TahomaSensorChannel extends SensorChannel<string> {}
+export class TahomaActuatorChannel extends ActuatorChannel<string> {}
+export class TahomaSensorChannelList extends SensorChannelList<string> {}
+export class TahomaActuatorChannelList extends ActuatorChannelList<string> {}
+export type TahomaActuatorCommandTransformer = (state: Command) => any
+export type TahomaSensorValueTransformer = (state: TahomaState) => SensorReadingValue
+export type TahomaSensorTypeMapper = {
   nameExtension: string
   measurementType: MeasurementTypeEnum
-  transformer: SomfySensorValueTransformer
+  transformer: TahomaSensorValueTransformer
 }
-export type SomfyActuatorTypeMapper = {
+export type TahomaActuatorTypeMapper = {
   commandType: CommandTypeEnum
-  transformer: SomfyActuatorCommandTransformer
+  transformer: TahomaActuatorCommandTransformer
 }

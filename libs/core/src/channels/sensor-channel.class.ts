@@ -13,11 +13,11 @@ export class SensorChannel<TUID extends number | string> extends ChannelBase<TUI
     super(uid, name, type, transformer)
   }
 
-  transformToSensorReading(state: unknown, interfaceName: string, time: Date): SensorReading {
+  transformToSensorReading(state: any, interfaceName: string, time: Date): SensorReading {
     if (!this.transformer) {
       SensorChannel.log.warn(`Transformer not defined for mapper ${this.name}`)
     }
-    const value = this.transformer(state)
+    const value = this.transformer(state, undefined)
     if (typeof value === 'object') {
       delete value.type
     }

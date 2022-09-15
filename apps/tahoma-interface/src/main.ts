@@ -1,3 +1,4 @@
+import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
