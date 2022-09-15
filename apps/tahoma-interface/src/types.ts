@@ -2,7 +2,9 @@ import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
+import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { Command } from '@core/commands/command.type'
+import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 
 export type SomfySensorStatesEnum =
@@ -50,3 +52,13 @@ export class SomfySensorChannelList extends SensorChannelList<string> {}
 export class SomfyActuatorChannelList extends ActuatorChannelList<string> {}
 export type SomfyActuatorCommandTransformer = (state: Command) => any
 export type SomfySensorValueTransformer = (state: SomfyState) => SensorReadingValue
+export type SomfySensorTypeMapper = {
+  nameExtension: string
+  measurementType: MeasurementTypeEnum
+  transformer: SomfySensorValueTransformer
+}
+export type SomfyActuatorTypeMapper = {
+  nameExtension: string
+  commandType: CommandTypeEnum
+  transformer: SomfyActuatorCommandTransformer
+}

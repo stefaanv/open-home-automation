@@ -13,7 +13,14 @@ import {
   SENSOR_TYPE_MAPPERS,
   tahomaRollerShutterCommandCreator,
 } from './constants'
-import { SomfyDevice, SomfyEvent, SomfySensorChannel, SomfySensorChannelList, SomfyActuatorChannelList } from './types'
+import {
+  SomfyDevice,
+  SomfyEvent,
+  SomfySensorChannel,
+  SomfySensorChannelList,
+  SomfyActuatorChannelList,
+  SomfySensorTypeMapper,
+} from './types'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 
@@ -73,12 +80,13 @@ export class TahomaInterfaceService {
           ['io:RollerShutterGenericIOComponent', 'io:LightIOSystemSensor'].includes(d.controllableName),
       )
       .forEach(device => {
-        const sensorNamePrefix = SENSOR_NAME_TRANSLATION[device.label]!
+        const sensorNamePrefix: SomfySensorTypeMapper = SENSOR_NAME_TRANSLATION[device.label]!
         device.states.forEach(state => {
           // alle statussen overlopen, 1 device kan meerdere sensoren / actuatoren vertegenwoordigen
           //TODO onderstaande nog in constant bestand steken zoals bij de Phoscon interface
           if (SENSOR_TYPE_MAPPERS[state.name]) {
-            const { nameExtension, measurementType, transformer } = SENSOR_TYPE_MAPPERS[state.name]
+            const { nameExtension, measurementType, transformer }: SomfySensorTypeMapper =
+              SENSOR_TYPE_MAPPERS[state.name]
             const channel = new SomfySensorChannel(
               device.deviceURL + '_' + state.name,
               sensorNamePrefix + nameExtension,

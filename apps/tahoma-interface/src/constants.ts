@@ -1,7 +1,7 @@
 import { RollerShutterActions } from '@core/commands/roller-shutter'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { Moving } from '@core/sensor-reading-data-types'
-import { SomfySensorStatesEnum, SomfySensorValueTransformer, SomfyState } from './types'
+import { SomfySensorStatesEnum, SomfySensorTypeMapper, SomfySensorValueTransformer, SomfyState } from './types'
 
 export const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, string> = {
   up: 'up',
@@ -14,23 +14,17 @@ export const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, str
 export const ACTUATOR_NAME_TRANSLATION = { 'living zuid': 'rl_living_zuid' }
 export const SENSOR_NAME_TRANSLATION = { 'Sun sensor': 'buiten_oost_lumi', 'living zuid': 'rl_living_zuid' }
 
-export const SENSOR_TYPE_MAPPERS: Record<
-  SomfySensorStatesEnum,
-  {
-    nameExtension: string
-    measurementType: MeasurementTypeEnum
-    transformer: SomfySensorValueTransformer
-  }
-> = {
+export const SENSOR_TYPE_MAPPERS: Record<SomfySensorStatesEnum, SomfySensorTypeMapper> = {
   'core:LuminanceState': {
     nameExtension: '_illu',
-    measurementType: 'illuminance',
+    measurementType: 'illuminance' as MeasurementTypeEnum,
     transformer: v => {
       const value = v.value as number
       return {
         value: value,
         formattedValue: value.toFixed(0) + ' Lux',
         unit: 'Lux',
+        type: 'illuminance',
       }
     },
   },
@@ -40,13 +34,14 @@ export const SENSOR_TYPE_MAPPERS: Record<
   'core:ManufacturerSettingsState': undefined,
   'core:ClosureState': {
     nameExtension: '_closure',
-    measurementType: 'closure',
+    measurementType: 'closure' as MeasurementTypeEnum,
     transformer: (v: SomfyState) => {
       const value = v.value as number
       return {
         value: value,
         formattedValue: value.toFixed(0) + '%',
         unit: '%',
+        type: 'closure',
       }
     },
   },
@@ -54,7 +49,7 @@ export const SENSOR_TYPE_MAPPERS: Record<
   'core:TargetClosureState': undefined,
   'core:MovingState': {
     nameExtension: '_moving',
-    measurementType: 'moving',
+    measurementType: 'moving' as MeasurementTypeEnum,
     transformer: (v: SomfyState) => v.value as Moving,
   },
   'core:NameState': undefined,

@@ -17,12 +17,16 @@ export class SensorChannel<TUID extends number | string> extends ChannelBase<TUI
     if (!this.transformer) {
       SensorChannel.log.warn(`Transformer not defined for mapper ${this.name}`)
     }
+    const value = this.transformer(state)
+    if (typeof value === 'object') {
+      delete value.type
+    }
     const update = {
       name: this.name,
       origin: interfaceName,
       time,
       type: this.type,
-      value: this.transformer(state),
+      value,
     }
     console.log(JSON.stringify(update))
     return update

@@ -2,7 +2,9 @@ import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
+import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { Command } from '@core/commands/command.type'
+import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 
 export type PhosconEvent = {
@@ -119,3 +121,13 @@ export class PhosconSensorChannelList extends SensorChannelList<number> {}
 export class PhosconActuatorChannelList extends ActuatorChannelList<number> {}
 export type PhosconActuatorCommandTransformer = (state: Command) => PhosconCommand
 export type PhosconSensorValueTransformer = (state: PhosconState) => SensorReadingValue
+export type PhosconSensorTypeMapper = {
+  nameExtension: string
+  measurementType: MeasurementTypeEnum
+  transformer: PhosconSensorValueTransformer
+}
+export type PhosconActuatorTypeMapper = {
+  nameExtension: string
+  commandType: CommandTypeEnum
+  transformer: PhosconActuatorCommandTransformer
+}

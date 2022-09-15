@@ -8,10 +8,12 @@ import Handlebars from 'handlebars'
 import {
   PhosconActuatorChannel,
   PhosconActuatorChannelList,
+  PhosconActuatorTypeMapper,
   PhosconDiscoveryItem,
   PhosconEvent,
   PhosconSensorChannel,
   PhosconSensorChannelList,
+  PhosconSensorTypeMapper,
 } from './type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
@@ -108,17 +110,17 @@ export class PhosconInterfaceService {
         const actuatorName = regexExtract(discovered.name, mapperConfig.filter, 'actuatorName')
 
         //convert zigbee types into AHO command types
-        const typeMap = ACTUATOR_TYPE_MAPPERS[discovered.type]
+        const typeMap: PhosconActuatorTypeMapper = ACTUATOR_TYPE_MAPPERS[discovered.type]
         if (!typeMap) {
           // actuator type not known -> this program needs updating
           this._log.warn(`Unknown actuator type ${discovered.type}, full payload below`)
           console.log(discovered)
         } else {
-          const [nameExtension, type, transformer] = typeMap
-          const channel = new PhosconActuatorChannel(id, actuatorName + nameExtension, type, transformer)
+          const { nameExtension, commandType, transformer } = typeMap
+          const channel = new PhosconActuatorChannel(id, actuatorName + nameExtension, commandType, transformer)
 
           this._actuatorChannels.add(channel)
-          this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${type} (id=${id})`)
+          this._log.log(`New actuator defined "${actuatorName + nameExtension}", type=${commandType} (id=${id})`)
         }
       }
     }
@@ -173,7 +175,7 @@ export class PhosconInterfaceService {
         const sensorName = regexExtract(discovered.name, mapperConfig.filter, 'sensorName')
 
         //convert zigbee types into AHO measurement types
-        const typeMap = SENSOR_TYPE_MAPPERS[discovered.type ?? 'On/Off plug-in unit']
+        const typeMap: PhosconSensorTypeMapper = SENSOR_TYPE_MAPPERS[discovered.type ?? 'On/Off plug-in unit']
         if (!typeMap) {
           // sensor type not known -> this program needs updating
           this._log.warn(`Unknown Zigbee type ${discovered.type}, full payload below`)
