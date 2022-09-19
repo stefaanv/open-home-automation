@@ -9,6 +9,7 @@ import { Command } from '@core/commands/command.type'
 import { RollerShutterCommand } from '@core/commands/roller-shutter'
 import {
   ACTUATOR_NAME_TRANSLATION,
+  ACTUATOR_TYPE_MAPPERS,
   SENSOR_NAME_TRANSLATION,
   SENSOR_TYPE_MAPPERS,
   tahomaRollerShutterCommandCreator,
@@ -65,6 +66,7 @@ export class TahomaInterfaceService {
       .filter(d => d.controllableName === 'io:RollerShutterGenericIOComponent')
       .forEach(d => {
         const actuatorName = ACTUATOR_NAME_TRANSLATION[d.label]
+        // const transformer = ACTUATOR_TYPE_MAPPERS[]
         const transformer = (command: Command) => {
           const cmd = command as RollerShutterCommand
           return tahomaRollerShutterCommandCreator(d.deviceURL, cmd.action, cmd.position)
@@ -127,13 +129,22 @@ export class TahomaInterfaceService {
       })
   }
 
-  //TODO nog voorkomen dat verkeerde commando's gestuurd kunnen worden
-  // testen met topic = `oha2/command/rl_living_zuid`, data = `{"action":"close"}` of `{"command":{"action":"toPosition","position":10}}`
+  //TODO nog voorkomen dat verkeerde commando's gestuurd kunnen worden (validatie op inkomende commando's
+  //TODO treffelijke logging van extern verstuurde commando's + uniformiseren over interfaces
+  // testen met topic = `oha2/command/rl_living_zuid`, data = `{"action":"close"}` of `{"action":"toPosition","position":10}`
   private async mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
     const [channel, command] = this._actuatorChannels.toForeign(actuatorName, cmd)
-    const result = await this._axios.post('exec/apply', command)
-    console.log(result.statusText)
+    try {
+      const result = await this._axios.post('exec/apply', command)
+      console.log(result.statusText)
+    } catch (error: unknown | AxiosError) {
+      if (axios.isAxiosError(error)) {
+        console.error(error.message)
+      } else {
+        console.error(error)
+      }
+    }
     /*
     const actuator = this._actuatorChannels.getByName(actuatorName)
     if (!actuator) {

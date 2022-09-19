@@ -14,6 +14,8 @@ export class ActuatorChannel extends ChannelBase<CommandTypeEnum> {
   constructor(uid: string, name: string, type: CommandTypeEnum, transformer: ActuatorChannelTransformer) {
     super(uid, name, type, transformer)
   }
+
+  //TODO foutafhandeling en logging
   transformToForeignCommand(command: Command): any {
     return this.transformer(command, this)
   }
