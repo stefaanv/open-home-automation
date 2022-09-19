@@ -3,14 +3,14 @@ import { LoggingService } from '@core/logging.service'
 import { ActuatorChannel } from './actuator-channel.class'
 import { ChannelListBase } from './channel-list-base.class'
 
-export class ActuatorChannelList<TUID extends string | number> extends ChannelListBase<TUID, ActuatorChannel<TUID>> {
+export class ActuatorChannelList extends ChannelListBase<ActuatorChannel> {
   static log: LoggingService
 
-  public add(channel: ActuatorChannel<TUID>) {
+  public add(channel: ActuatorChannel) {
     super.add(channel)
   }
 
-  public toForeign(name: string, command: Command): [ActuatorChannel<TUID>, any] {
+  public toForeign(name: string, command: Command): [ActuatorChannel, any] {
     const channel = this.getByName(name)
     if (channel) {
       return [channel, channel.transformToForeignCommand(command)]

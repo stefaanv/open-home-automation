@@ -1,18 +1,15 @@
 import { ActuatorChannel } from './actuator-channel.class'
 import { SensorChannel } from './sensor-channel.class'
 
-export class ChannelListBase<
-  TUID extends string | number,
-  TChannel extends SensorChannel<TUID> | ActuatorChannel<TUID>,
-> {
+export class ChannelListBase<TChannel extends SensorChannel | ActuatorChannel> {
   private readonly _list: TChannel[] = []
-  private readonly _ignoreList: TUID[] = []
+  private readonly _ignoreList: string[] = []
 
   public add(channel: TChannel) {
     this._list.push(channel)
   }
 
-  public addIgnore(arg: TUID | TUID[]) {
+  public addIgnore(arg: string | string[]) {
     if (typeof arg === 'object') {
       this._ignoreList.push(...arg)
     } else {
@@ -20,11 +17,11 @@ export class ChannelListBase<
     }
   }
 
-  public get(uid: TUID): TChannel {
+  public get(uid: string): TChannel {
     return this._list.find(e => e.uid === uid)
   }
 
-  public toIgnore(uid: TUID): boolean {
+  public toIgnore(uid: string): boolean {
     return this._ignoreList.includes(uid)
   }
 
