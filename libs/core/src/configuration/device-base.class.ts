@@ -1,5 +1,5 @@
-export class DeviceBase<TUID extends number | string, TConfig> {
-  constructor(readonly uid: TUID, readonly name: string, readonly config: TConfig) {}
+export class DeviceBase<TConfig> {
+  constructor(readonly uid: string, readonly name: string, readonly config: TConfig) {}
 }
 
 export class Sensor<TConfig, TTransformerTarget> extends DeviceBase<TConfig> {

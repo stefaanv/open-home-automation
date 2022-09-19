@@ -1,4 +1,3 @@
-import { transcode } from 'buffer'
 import { Actuator, DeviceBase } from './device-base.class'
 
 export class DeviceList<T extends Sensor | Actuator> {
