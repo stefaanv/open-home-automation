@@ -6,10 +6,10 @@ import { ChannelBase } from './channel-base.class'
 
 export type SensorChannelTransformer = (state: any) => SensorReadingValue
 
-export class SensorChannel<TUID extends number | string> extends ChannelBase<TUID, MeasurementTypeEnum> {
+export class SensorChannel extends ChannelBase<MeasurementTypeEnum> {
   static log: LoggingService
 
-  constructor(uid: TUID, name: string, type: MeasurementTypeEnum, transformer: SensorChannelTransformer) {
+  constructor(uid: string, name: string, type: MeasurementTypeEnum, transformer: SensorChannelTransformer) {
     super(uid, name, type, transformer)
   }
 

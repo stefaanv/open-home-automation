@@ -1,11 +1,11 @@
 import { transcode } from 'buffer'
 import { Actuator, DeviceBase } from './device-base.class'
 
-export class DeviceList<TUID extends number | string, T extends Sensor | Actuator> {
-  private readonly _list: DeviceBase<TUID, TOutType, TConfig, TTransformerTarget>[] = []
+export class DeviceList<T extends Sensor | Actuator> {
+  private readonly _list: DeviceBase<TOutType, TConfig, TTransformerTarget>[] = []
 
   public push(
-    uid: TUID,
+    uid: string,
     name: string,
     type: TOutType,
     discoveredConfig: TConfig,
@@ -14,7 +14,7 @@ export class DeviceList<TUID extends number | string, T extends Sensor | Actuato
     this._list.push(new DeviceBase(uid, name, type, discoveredConfig, transformer))
   }
 
-  public getConfig(uid: TUID) {
+  public getConfig(uid: string) {
     return this._list.find(e => e.uid === uid)?.config
   }
 

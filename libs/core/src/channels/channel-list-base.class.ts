@@ -1,17 +1,14 @@
 import { ActuatorChannel } from './actuator-channel.class'
 import { SensorChannel } from './sensor-channel.class'
 
-export class ChannelListBase<
-  TUID extends string | number,
-  TChannel extends SensorChannel<TUID> | ActuatorChannel<TUID>,
-> {
+export class ChannelListBase<TChannel extends SensorChannel | ActuatorChannel> {
   private readonly _list: TChannel[] = []
 
   public add(channel: TChannel) {
     this._list.push(channel)
   }
 
-  public get(uid: TUID): TChannel {
+  public get(uid: string): TChannel {
     return this._list.find(e => e.uid === uid)
   }
 
