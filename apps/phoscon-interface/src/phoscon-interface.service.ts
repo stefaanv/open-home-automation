@@ -6,25 +6,16 @@ import WebSocket from 'ws'
 import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
 import {
-  PhosconActuatorChannel,
-  PhosconActuatorChannelList,
-  PhosconActuatorTypeMapper,
-  PhosconDiscoveryItem,
   PhosconEvent,
-  PhosconSensorChannel,
-  PhosconSensorChannelList,
-  PhosconSensorTypeMapper,
-  PhosconStateTypeEnum,
+  PhosconState,
+  PhosconSensorStateTypeEnum,
+  PhosconActuatorDiscoveryItem,
+  PhosconSensorDiscoveryItem,
 } from './type'
-import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { regexExtract, regexTest } from '@core/helpers/helpers'
-import { Command } from '@core/commands/command.type'
 import { ChannelConfig, ChannelConfigRaw } from '@core/configuration/channel-config-base.class'
-import { CommandTypeEnum } from '@core/commands/command-type.enum'
-import { ActuatorChannel } from '@core/channels/actuator-channel.class'
-import { SensorChannel } from '@core/channels/sensor-channel.class'
-import { ChannelService, DiscoveredSensor } from '@core/channel-service/channel.service'
+import { ChannelService } from '@core/channel-service/channel.service'
+import { SensorChannel } from '@core/channel-service/sensor-channel.class'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -37,8 +28,6 @@ const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 @Injectable()
 export class PhosconInterfaceService {
   private readonly _apiKey: string
-  private readonly _sensorChannels = new PhosconSensorChannelList()
-  private readonly _actuatorChannels = new PhosconActuatorChannelList()
   private _ignoreIds: number[] = []
   private _processingStarted = false
   private readonly _axios: Axios
@@ -47,7 +36,7 @@ export class PhosconInterfaceService {
     private readonly _log: LoggingService,
     private readonly _mqttDriver: MqttDriver,
     private readonly _config: ConfigService,
-    private readonly _channelService: ChannelService<number, any, any, any>,
+    private readonly _channelService: ChannelService<PhosconState, PhosconSensorStateTypeEnum>,
   ) {
     // set log context
     this._log.setContext(PhosconInterfaceService.name)
@@ -65,20 +54,17 @@ export class PhosconInterfaceService {
   }
 
   private async configure() {
-    SensorChannel.log = this._log
-    ActuatorChannel.log = this._log
     await this.configureSensors()
-    await this.configureActuators()
+    // await this.configureActuators()
     this._log.log(`configuration done, starting the listener`)
 
-    // Start the sensors readout
+    // Start the sensors readout through WebSocket
     const eventUrl = this._config.get<string>(EVENT_URL, '')
     if (!eventUrl) this._log.warn(EVENT_URL + EMPTY_ERROR_MSG)
-
     const ws = new WebSocket(eventUrl)
     ws.onmessage = (event: WebSocket.MessageEvent) => this.wsEventHandler(event)
   }
-
+  /*
   private async configureActuators() {
     // configuration pre-processing
     const actuatorConfigRaw = this._config.get<ChannelConfigRaw<CommandTypeEnum, unknown>>(ACTUATOR_CONFIGURATION)
@@ -139,6 +125,7 @@ export class PhosconInterfaceService {
     const [channel, command] = this._actuatorChannels.toForeign(actuatorName, cmd)
     this._axios.put(`lights/${channel.uid}/state`, command)
   }
+*/
 
   private async configureSensors() {
     // configuration pre-processing
@@ -147,70 +134,20 @@ export class PhosconInterfaceService {
     const sensorConfig = new ChannelConfig<MeasurementTypeEnum, unknown>(sensorConfigRaw)
 
     // discover sensor and actuators information from phoscon
-    //TODO! nummering actuatoren en sensoren overlapt ! mogen dus niet samen gegooid worden !
-    const discoveredSensors = await this._axios.get<PhosconDiscoveryItem[]>('sensors')
-    const discoveredActuators = await this._axios.get<PhosconDiscoveryItem[]>('lights')
-    const discoveredSensors2 = await this._axios.get<Record<number, PhosconDiscoveryItem>>('sensors')
-    const discoveredActuators2 = await this._axios.get<Record<number, PhosconDiscoveryItem>>('lights')
-    const discoveredBoth2 = { ...discoveredActuators2.data, ...discoveredSensors2.data }
-    const discoveredBoth2Processed = Object.getOwnPropertyNames(discoveredBoth2).map(k => {
-      const sensor = discoveredBoth2[k] as PhosconDiscoveryItem
-      return {
-        key: parseInt(k),
-        name: sensor.name,
-        foreignTypeName: sensor.type,
-      } as DiscoveredSensor<number, PhosconStateTypeEnum>
-    })
-    this._channelService.discoverSensors(discoveredBoth2Processed)
-    const discoveredDevices = { ...discoveredSensors.data, ...discoveredActuators.data }
-
-    // construct `selected` and `to ignore` id lists
-    const allIds = Object.keys(discoveredDevices).map(id => parseInt(id))
-    const selectedIds = allIds.filter(id => !regexTest(discoveredDevices[id].name, sensorConfig.ignore))
-    this._ignoreIds = allIds.filter(id => !selectedIds.some(i => i === id))
-
-    // Sensor discovery
-    for await (const id of selectedIds) {
-      // iterate over configuration received from the interface
-      const discovered = discoveredDevices[id]
-
-      // Get mapper info from configuration
-      //TODO nog `instance` mapper implementeren
-      const mapperConfig = sensorConfig.discover.find(
-        dm => regexTest(discovered.name, dm.filter),
-        //TODO nog branch implementeren voor instance config
-      )
-
-      if (!mapperConfig) {
-        // no mapping found -> configuration needs updating
-        const msg = `NO mapping in configuration for sensor "${discovered.name}", type=${discovered.type}, model=${discovered.modelid} (id=${id})`
-        this._log.warn(msg)
-        console.log(JSON.stringify(discovered))
-      } else {
-        // mapping available -> create the sensor
-        const sensorName = regexExtract(discovered.name, mapperConfig.filter, 'sensorName')
-
-        //convert zigbee types into AHO measurement types
-        const typeMap: PhosconSensorTypeMapper = SENSOR_TYPE_MAPPERS[discovered.type ?? 'On/Off plug-in unit']
-        if (!typeMap) {
-          // sensor type not known -> this program needs updating
-          this._log.warn(`Unknown Zigbee type ${discovered.type}, full payload below`)
-          console.log(discovered)
-        } else {
-          const { nameExtension, measurementType, transformer } = typeMap
-          const name = sensorName + nameExtension
-          const channel = new PhosconSensorChannel(id, name, measurementType, transformer)
-          this._sensorChannels.add(channel)
-          this._log.log(`New sensor defined "${sensorName + nameExtension}", type=${measurementType} (id=${id})`)
-
-          // Process initial state
-          this.wsEventHandler({ data: JSON.stringify({ ...discovered, id }) })
-        }
-      }
-    }
-
-    // Add instance sensors from config
-    // for await (const )
+    // const discoveredSensors_old = await this._axios.get<PhosconDiscoveryItem[]>('sensors')
+    // const discoveredActuators_old = await this._axios.get<PhosconDiscoveryItem[]>('lights')
+    const discoveredSensors = await this._axios.get<Record<number, PhosconSensorDiscoveryItem>>('sensors')
+    const discoveredActuators = await this._axios.get<Record<number, PhosconActuatorDiscoveryItem>>('lights')
+    const discoveredBoth = Object.values({ ...discoveredActuators.data, ...discoveredSensors.data }).map(ds => ({
+      uid: ds.uniqueid,
+      name: ds.name,
+      foreignTypeName: ds.type as PhosconSensorStateTypeEnum,
+      state: ds.state,
+    }))
+    const initialStateProcessor = (state: PhosconState, channel: SensorChannel<PhosconState>) =>
+      this.wsEventHandler({ data: JSON.stringify({ state, uniqueid: channel.uid }) })
+    const stateLogger = (state: PhosconState) => JSON.stringify(state)
+    this._channelService.sensorDiscovery(discoveredBoth, initialStateProcessor, stateLogger)
   }
 
   // Phoscon SSE link event handler
@@ -224,14 +161,18 @@ export class PhosconInterfaceService {
     //{"e":"changed","id":"4","r":"sensors","state":{"buttonevent":1002,"lastupdated":"2022-09-13T16:16:55.915"},"t":"event","uniqueid":"00:12:4b:00:22:42:41:25-01-0006"}
     if (payload.state && payload?.state['buttonevent']) console.log(payload.state)
     try {
-      if (payload.state && payload.r !== 'groups' && !this._ignoreIds.includes(parseInt(payload.id))) {
+      const state = payload.state
+      if (state && payload.r !== 'groups' && !this._ignoreIds.includes(parseInt(payload.id))) {
         // if attr property is present then packet is repeat config
         // state change event
         //TODO transformer voor presence toevoegen
         //TODO unit toevoegen aan SensorReading
         //TODO stringValue toevoegen aan SensorReading
-        const uid = parseInt(payload.id)
-        this._sensorChannels.sendUpdate(this._mqttDriver, uid, payload.state, 'phoscon', now)
+        const channel = this._channelService.getSensor(payload.uniqueid)
+        const tr = channel.transformer(state)
+        debugger
+        // this._sensorChannels.sendUpdate(this._mqttDriver, payload.uniqueid, payload.state, 'phoscon', now)
+        // debugger
       }
     } catch (error) {
       this._log.error(JSON.stringify(error))

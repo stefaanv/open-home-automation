@@ -10,7 +10,7 @@ import {
   PhosconReportedValue,
   PhosconSensorTypeMapper,
   PhosconState,
-  PhosconStateTypeName,
+  PhosconSensorStateTypeEnum,
   PresenceState,
   SwitchState,
   TemperatureState,
@@ -28,7 +28,7 @@ const numericTransformer =
     } as Numeric
   }
 
-export const SENSOR_TYPE_MAPPERS: Record<PhosconStateTypeName, PhosconSensorTypeMapper> = {
+export const SENSOR_TYPE_MAPPERS: Record<PhosconSensorStateTypeEnum, PhosconSensorTypeMapper> = {
   ZHALightLevel: {
     nameExtension: '_lumi',
     measurementType: 'illuminance' as MeasurementTypeEnum,

@@ -1,10 +1,9 @@
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { SensorReading } from '@core/sensor-reading.type'
-import { SensorChannelTransformer } from './channel.service'
+import { SensorChannelTransformer } from './types'
 
-export class SensorChannel<TUID extends number | string, TFVS> {
+export class SensorChannel<TFVS> {
   constructor(
-    public readonly uid: TUID,
+    public readonly uid: string,
     public readonly name: string,
     public readonly type: MeasurementTypeEnum,
     public readonly transformer: SensorChannelTransformer<TFVS>,

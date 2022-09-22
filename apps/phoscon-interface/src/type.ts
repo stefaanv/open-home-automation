@@ -1,22 +1,22 @@
-import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
-import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
-import { SensorChannel } from '@core/channels/sensor-channel.class'
 import { CommandTypeEnum } from '@core/commands/command-type.enum'
 import { Command } from '@core/commands/command.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 
-export type PhosconStateTypeEnum = PhosconStateTypeName
-export type PhosconStateTypeName =
-  | 'ZHAPresence'
-  | 'ZHALightLevel'
-  | 'ZHATemperature'
-  | 'ZHAHumidity'
-  | 'ZHAOpenClose'
-  | 'ZHAAirQuality'
-  | 'ZHASwitch'
-  | 'On/Off plug-in unit'
+export const PhosconSensorStateTypeEnumNames = [
+  'ZHAPresence',
+  'ZHALightLevel',
+  'ZHATemperature',
+  'ZHAHumidity',
+  'ZHAOpenClose',
+  'ZHAAirQuality',
+  'ZHASwitch',
+  'On/Off plug-in unit',
+] as const
+export type PhosconSensorStateTypeEnum = typeof PhosconSensorStateTypeEnumNames[number]
+
+export type PhosconCommandTypeEnum = 'on-off'
 
 export type PhosconEvent = {
   e: string
@@ -28,36 +28,30 @@ export type PhosconEvent = {
   state: PhosconState | undefined
   uniqueid: string
 }
+export type PhosconDiscoveryItemBase = {
+  uid: number
+  etag: string
+  state: PhosconState
+  name: string
+  uniqueid: string
+  swversion: string
+  modelid: string
+}
 
-export type PhosconSensorDiscoveryItem = {
+export type PhosconSensorDiscoveryItem = PhosconDiscoveryItemBase & {
+  type: PhosconSensorStateTypeEnum
   config: any
   ep: number
-  etag: string
   manufacturername: string
-  modelid: string
-  name: string
-  state: any
-  swversion: string
-  type: PhosconStateTypeEnum
-  uniqueid: string
-
-  uid: number
   lastseen: string
 }
 
-export type PhosconActuatorType = ''
-export type PhosconActuatorDiscoveryItem = {
-  uid: number
-  etag: string
+export type PhosconActuatorType = string
+export type PhosconActuatorDiscoveryItem = PhosconDiscoveryItemBase & {
+  type: PhosconActuatorType
   hascolor: boolean
   manufacturer: string
-  modelid: string
-  name: string
   pointsymbol: any
-  state: any
-  swversion: string
-  type: PhosconActuatorType
-  uniqueid: string
 }
 
 export type PhosconDiscoveryItem = PhosconSensorDiscoveryItem | PhosconActuatorDiscoveryItem
@@ -122,10 +116,7 @@ export type PhosconOnOffCommand = {
   on: boolean
 }
 export type PhosconCommand = PhosconOnOffCommand
-export class PhosconSensorChannel extends SensorChannel<number> {}
 export class PhosconActuatorChannel extends ActuatorChannel<number> {}
-export class PhosconSensorChannelList extends SensorChannelList<number> {}
-export class PhosconActuatorChannelList extends ActuatorChannelList<number> {}
 export type PhosconActuatorCommandTransformer = (state: Command) => PhosconCommand
 export type PhosconSensorValueTransformer = (state: PhosconState) => SensorReadingValue
 export type PhosconSensorTypeMapper = {
