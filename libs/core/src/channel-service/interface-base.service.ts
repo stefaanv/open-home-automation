@@ -25,24 +25,25 @@ import { SensorReadingValue } from '@core/sensor-reading-data-types'
    - type: sensor type (eg ZHASwitch)
 */
 @Injectable()
-export class ChannelService<TFVS, TFITE extends string, TFC = any> {
-  private _sensorChannels: SensorChannel<TFVS>[] = []
-  private _sensorIgnoreList: { name: string; uid: string }[] = []
-  private _actuatorChannels: ActuatorChannel<TFC>[] = []
-  private readonly _discoveryConfig: DiscoveryConfig
+export class InterfaceBase<TFVS, TFITE extends string, TFC = any> {
+  protected _sensorChannels: SensorChannel<TFVS>[] = []
+  protected _sensorIgnoreList: { name: string; uid: string }[] = []
+  protected _actuatorChannels: ActuatorChannel<TFC>[] = []
+  protected readonly _discoveryConfig: DiscoveryConfig
 
   constructor(
-    @Inject(INTERFACE_NAME_TOKEN) private readonly _interfaceName: string,
-    private readonly _log: LoggingService,
-    private readonly _mqttDriver: MqttDriver,
-    private readonly _config: ConfigService,
+    interfaceName: string,
+    protected readonly _log: LoggingService,
+    protected readonly _config: ConfigService,
+    protected readonly _mqttDriver: MqttDriver,
+
     @Inject(SENSOR_TYPE_MAPPERS_TOKEN)
-    private readonly _sensorTypeMappers: Record<TFITE, SensorTypeMapper<TFVS>>, // @Inject(ACTUATOR_TYPE_MAPPERS_TOKEN) // private readonly _actuatorTypeMappers: Record<CommandTypeEnum, ActuatorTypeMapper<TFC>>,
+    protected readonly _sensorTypeMappers: Record<TFITE, SensorTypeMapper<TFVS>>, // @Inject(ACTUATOR_TYPE_MAPPERS_TOKEN) // private readonly _actuatorTypeMappers: Record<CommandTypeEnum, ActuatorTypeMapper<TFC>>,
   ) {
-    this._discoveryConfig = new DiscoveryConfig(this._config, this._interfaceName)
+    this._discoveryConfig = new DiscoveryConfig(this._config, interfaceName)
   }
 
-  public sensorDiscovery(
+  protected sensorDiscovery(
     discoveredSensors: DiscoveredSensor<TFITE, TFVS>[],
     initialStateProcessor: ((state: TFVS, channel: SensorChannel<TFVS>) => void) | undefined = undefined,
     stateLogger: ((state: TFVS) => string) | undefined = undefined,

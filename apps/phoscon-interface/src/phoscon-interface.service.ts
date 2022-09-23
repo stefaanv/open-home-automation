@@ -1,6 +1,6 @@
 import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import WebSocket from 'ws'
 import axios, { Axios } from 'axios'
@@ -14,8 +14,10 @@ import {
 } from './type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { ChannelConfig, ChannelConfigRaw } from '@core/configuration/channel-config-base.class'
-import { ChannelService } from '@core/channel-service/channel.service'
+import { InterfaceBase } from '@core/channel-service/interface-base.service'
 import { SensorChannel } from '@core/channel-service/sensor-channel.class'
+import { INTERFACE_NAME_TOKEN } from '@core/core.module'
+import { SensorTypeMapper } from '@core/channel-service/types'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -26,18 +28,22 @@ const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
 //TODO inkomende (mqtt) commando's valideren + foutmelding indien niet OK
 @Injectable()
-export class PhosconInterfaceService {
+export class PhosconInterfaceService extends InterfaceBase<PhosconState, PhosconSensorStateTypeEnum> {
   private readonly _apiKey: string
   private _ignoreIds: number[] = []
   private _processingStarted = false
   private readonly _axios: Axios
 
   constructor(
-    private readonly _log: LoggingService,
-    private readonly _mqttDriver: MqttDriver,
-    private readonly _config: ConfigService,
-    private readonly _channelService: ChannelService<PhosconState, PhosconSensorStateTypeEnum>,
+    @Inject(INTERFACE_NAME_TOKEN) private readonly interfaceName: string,
+    log: LoggingService,
+    mqttDriver: MqttDriver,
+    config: ConfigService,
+    sensorTypeMappers: Record<PhosconSensorStateTypeEnum, SensorTypeMapper<PhosconState>>,
+    // @Inject(ACTUATOR_TYPE_MAPPERS_TOKEN)
+    // private readonly _actuatorTypeMappers: Record<CommandTypeEnum, ActuatorTypeMapper<TFC>>,
   ) {
+    super(interfaceName, log, config, mqttDriver, sensorTypeMappers)
     // set log context
     this._log.setContext(PhosconInterfaceService.name)
 
@@ -147,7 +153,8 @@ export class PhosconInterfaceService {
     const initialStateProcessor = (state: PhosconState, channel: SensorChannel<PhosconState>) =>
       this.wsEventHandler({ data: JSON.stringify({ state, uniqueid: channel.uid }) })
     const stateLogger = (state: PhosconState) => JSON.stringify(state)
-    this._channelService.sensorDiscovery(discoveredBoth, initialStateProcessor, stateLogger)
+    this.sensorDiscovery(discoveredBoth, initialStateProcessor, stateLogger)
+    debugger
   }
 
   // Phoscon SSE link event handler
@@ -168,7 +175,7 @@ export class PhosconInterfaceService {
         //TODO transformer voor presence toevoegen
         //TODO unit toevoegen aan SensorReading
         //TODO stringValue toevoegen aan SensorReading
-        const channel = this._channelService.getSensor(payload.uniqueid)
+        const channel = super.getSensor(payload.uniqueid)
         const tr = channel.transformer(state)
         debugger
         // this._sensorChannels.sendUpdate(this._mqttDriver, payload.uniqueid, payload.state, 'phoscon', now)
