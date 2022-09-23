@@ -3,12 +3,11 @@ import { ConfigService } from '@nestjs/config'
 import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
 import { SensorChannel } from './sensor-channel.class'
-import { INTERFACE_NAME_TOKEN, SENSOR_TYPE_MAPPERS_TOKEN } from '../core.module'
+import { SENSOR_TYPE_MAPPERS_TOKEN } from '../core.module'
 import { DiscoveryConfig } from './discovery-config.class'
 import { regexExtract, regexTest } from '@core/helpers/helpers'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 import { DiscoveredSensor, SensorTypeMapper } from './types'
-import { SensorReadingValue } from '@core/sensor-reading-data-types'
 
 /**
  * Verantwoordelijkheden
@@ -64,7 +63,6 @@ export class InterfaceBase<TFVS, TFITE extends string, TFC = any> {
         this._log.log(logMessage)
         return { uid: ds.uid, name, type, transformer: typeMapper.transformer }
       })
-    discoveredSensors.forEach(ds => initialStateProcessor(ds.state, this.getSensor(ds.uid)))
   }
 
   getSensor(uid: string): SensorChannel<TFVS> {
