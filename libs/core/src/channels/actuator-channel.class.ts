@@ -11,7 +11,7 @@ export class ActuatorChannel /*<FATE extends string>*/ extends ChannelBase<Actua
     uid: string,
     name: string,
     type: ActuatorTypeEnum,
-    validator: ???,
+    validator: any, //TODO!
     // private readonly foreignType: FATE,
     transformer: ActuatorChannelTransformer /*<FATE>*/,
   ) {
