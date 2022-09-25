@@ -5,6 +5,5 @@ export type SensorReading<TValue extends SensorReadingValue = SensorReadingValue
   origin: string
   time: Date
   type: MeasurementTypeEnum
-  name: string
   value: TValue
 }

@@ -11,8 +11,12 @@
         "filter": "(?<name>[\\w:]+)_(multi|lumi|cnct|plug|switch)"
       }
     ], 
-    "define":{
-    }
+    "define":[{
+      "uid": "00:15:8d:00:02:f2:42:b6-01-0006",
+      "name": "test_cnct",
+      "type": "contact",
+      "foreignType": "ZHAOpenClose"
+    }]
   },
   "actuators": {
     "ignore": "(Range|Configuration|On\\/Off|Eethoek)[\\w\\s]*",

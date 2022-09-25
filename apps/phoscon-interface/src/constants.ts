@@ -1,3 +1,5 @@
+import { ActuatorTypeMapper } from '@core/channel-service/types'
+import { Command } from '@core/commands/command.type'
 import { OnOffCommand } from '@core/commands/on-off.type'
 import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from '@core/measurement-type.enum'
 import { Numeric, OnOff, OpenClosed, Presence, SwitchPressed } from '@core/sensor-reading-data-types'
@@ -14,6 +16,8 @@ import {
   PresenceState,
   SwitchState,
   TemperatureState,
+  PhosconActuatorTypeEnum,
+  PhosconOnOffCommand,
 } from './type'
 
 const numericTransformer =
@@ -74,13 +78,28 @@ export const SENSOR_TYPE_MAPPERS: Record<PhosconSensorStateTypeEnum, PhosconSens
   },
 }
 
-export const ACTUATOR_TYPE_MAPPERS: Record<string, PhosconActuatorTypeMapper> = {
+export const ACTUATOR_TYPE_MAPPERS: Record<PhosconActuatorTypeEnum, ActuatorTypeMapper> = {
   'On/Off plug-in unit': {
-    commandType: 'on-off',
+    actuatorType: 'relay',
+    nameExtension: '_relay',
     transformer: cmd => {
       const request: boolean = (cmd as OnOffCommand) === 'on'
       const result = { on: request }
       return result
+    },
+  },
+  'Range extender': {
+    actuatorType: undefined,
+    nameExtension: '_unused',
+    transformer: function (state: Command): PhosconOnOffCommand {
+      throw new Error('Function not implemented.')
+    },
+  },
+  'Color temperature light': {
+    actuatorType: undefined,
+    nameExtension: '_unused',
+    transformer: function (state: Command): PhosconOnOffCommand {
+      throw new Error('Function not implemented.')
     },
   },
 }

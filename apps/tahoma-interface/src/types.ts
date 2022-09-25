@@ -2,7 +2,7 @@ import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
-import { CommandTypeEnum } from '@core/commands/command-type.enum'
+import { ActuatorTypeEnum } from '@core/commands/command-type.enum'
 import { Command } from '@core/commands/command.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
@@ -58,6 +58,6 @@ export type TahomaSensorTypeMapper = {
   transformer: TahomaSensorValueTransformer
 }
 export type TahomaActuatorTypeMapper = {
-  commandType: CommandTypeEnum
+  commandType: ActuatorTypeEnum
   transformer: TahomaActuatorCommandTransformer
 }

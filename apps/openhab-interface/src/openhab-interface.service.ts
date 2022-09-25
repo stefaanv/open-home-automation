@@ -57,12 +57,12 @@ export class OpenhabInterfaceService {
     this._sensorMappers = mappersConfig.map(c =>
       c.type === 'generic'
         ? {
-          nameFilter: new RegExp(c.nameFilter),
-          measurementType: c.measurementType,
-        }
+            nameFilter: new RegExp(c.nameFilter),
+            measurementType: c.measurementType,
+          }
         : {
-          //TODO nog implementeren
-        },
+            //TODO nog implementeren
+          },
     )
     this._oldStates = {}
 
@@ -127,7 +127,7 @@ export class OpenhabInterfaceService {
       } as SensorReading
       // const update = mapper.transformer(payload, lastUpdate, now)
       update.name = openhabTopic
-      this._mqttDriver.sendMeasurement(update)
+      this._mqttDriver.sendSensorStateUpdate(update)
       this._oldStates[openhabTopic] = update
     }
   }

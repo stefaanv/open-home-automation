@@ -1,10 +1,9 @@
-import { ActuatorChannel } from '@core/channels/actuator-channel.class'
-import { CommandTypeEnum } from '@core/commands/command-type.enum'
+import { ActuatorTypeEnum } from '@core/commands/command-type.enum'
 import { Command } from '@core/commands/command.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-data-types'
 
-export const PhosconSensorStateTypeEnumNames = [
+export const PhosconSensorTypeEnumNames = [
   'ZHAPresence',
   'ZHALightLevel',
   'ZHATemperature',
@@ -14,9 +13,16 @@ export const PhosconSensorStateTypeEnumNames = [
   'ZHASwitch',
   'On/Off plug-in unit',
 ] as const
-export type PhosconSensorStateTypeEnum = typeof PhosconSensorStateTypeEnumNames[number]
+export type PhosconSensorStateTypeEnum = typeof PhosconSensorTypeEnumNames[number]
 
-export type PhosconCommandTypeEnum = 'on-off'
+export const PhosconActuatorTypeEnumNames = [
+  'On/Off plug-in unit',
+  'Range extender',
+  'Color temperature light',
+] as const
+export type PhosconActuatorTypeEnum = typeof PhosconActuatorTypeEnumNames[number]
+
+export const PhosconActuatorModelIds = ['RaspBee II', 'SP 220', 'ConBee II', 'TS0207', 'CCT Light']
 
 export type PhosconEvent = {
   e: string
@@ -46,9 +52,8 @@ export type PhosconSensorDiscoveryItem = PhosconDiscoveryItemBase & {
   lastseen: string
 }
 
-export type PhosconActuatorType = string
 export type PhosconActuatorDiscoveryItem = PhosconDiscoveryItemBase & {
-  type: PhosconActuatorType
+  type: PhosconActuatorTypeEnum
   hascolor: boolean
   manufacturer: string
   pointsymbol: any
@@ -116,7 +121,6 @@ export type PhosconOnOffCommand = {
   on: boolean
 }
 export type PhosconCommand = PhosconOnOffCommand
-export class PhosconActuatorChannel extends ActuatorChannel<number> {}
 export type PhosconActuatorCommandTransformer = (state: Command) => PhosconCommand
 export type PhosconSensorValueTransformer = (state: PhosconState) => SensorReadingValue
 export type PhosconSensorTypeMapper = {
@@ -125,6 +129,6 @@ export type PhosconSensorTypeMapper = {
   transformer: PhosconSensorValueTransformer
 }
 export type PhosconActuatorTypeMapper = {
-  commandType: CommandTypeEnum
+  commandType: ActuatorTypeEnum
   transformer: PhosconActuatorCommandTransformer
 }

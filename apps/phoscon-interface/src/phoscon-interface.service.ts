@@ -11,13 +11,15 @@ import {
   PhosconSensorStateTypeEnum,
   PhosconActuatorDiscoveryItem,
   PhosconSensorDiscoveryItem,
+  PhosconActuatorTypeEnum,
 } from './type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { ChannelConfig, ChannelConfigRaw } from '@core/configuration/channel-config-base.class'
+import { ChannelConfigRaw } from '@core/configuration/channel-config-base.class'
 import { InterfaceBase } from '@core/channel-service/interface-base.service'
-import { SensorChannel } from '@core/channel-service/sensor-channel.class'
 import { INTERFACE_NAME_TOKEN } from '@core/core.module'
-import { SensorTypeMapper } from '@core/channel-service/types'
+import { DiscoveredActuator, SensorTypeMapper } from '@core/channel-service/types'
+import { Command } from '@core/commands/command.type'
+import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -27,23 +29,27 @@ const ACTUATOR_CONFIGURATION = 'phoscon.actuators'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 
 //TODO inkomende (mqtt) commando's valideren + foutmelding indien niet OK
+const stateLogger = (state: PhosconState) => JSON.stringify(state)
+
 @Injectable()
-export class PhosconInterfaceService extends InterfaceBase<PhosconState, PhosconSensorStateTypeEnum> {
+export class PhosconInterfaceService extends InterfaceBase<
+  PhosconState,
+  PhosconSensorStateTypeEnum,
+  PhosconActuatorTypeEnum
+> {
   private readonly _apiKey: string
   private _ignoreIds: number[] = []
-  private _processingStarted = false
   private readonly _axios: Axios
 
   constructor(
-    @Inject(INTERFACE_NAME_TOKEN) private readonly interfaceName: string,
+    @Inject(INTERFACE_NAME_TOKEN) interfaceName: string,
     log: LoggingService,
     mqttDriver: MqttDriver,
     config: ConfigService,
-    sensorTypeMappers: Record<PhosconSensorStateTypeEnum, SensorTypeMapper<PhosconState>>,
     // @Inject(ACTUATOR_TYPE_MAPPERS_TOKEN)
     // private readonly _actuatorTypeMappers: Record<CommandTypeEnum, ActuatorTypeMapper<TFC>>,
   ) {
-    super(interfaceName, log, config, mqttDriver, sensorTypeMappers)
+    super(interfaceName, log, config, mqttDriver)
     // set log context
     this._log.setContext(PhosconInterfaceService.name)
 
@@ -60,18 +66,26 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconState, Phoscon
   }
 
   private async configure() {
-    await this.configureSensors()
-    // await this.configureActuators()
-    this._log.log(`configuration done, starting the listener`)
+    const discoveredSensors = await this._axios.get<Record<number, PhosconSensorDiscoveryItem>>('sensors')
+    const discoveredActuators = await this._axios.get<Record<number, PhosconActuatorDiscoveryItem>>('lights')
 
-    // Start the sensors readout through WebSocket
-    const eventUrl = this._config.get<string>(EVENT_URL, '')
-    if (!eventUrl) this._log.warn(EVENT_URL + EMPTY_ERROR_MSG)
-    const ws = new WebSocket(eventUrl)
-    ws.onmessage = (event: WebSocket.MessageEvent) => this.wsEventHandler(event)
+    await this.configureSensors(Object.values(discoveredSensors.data), Object.values(discoveredActuators.data))
+    await this.configureActuators(Object.values(discoveredActuators.data))
   }
-  /*
-  private async configureActuators() {
+
+  private async configureActuators(discoveredActuators: PhosconActuatorDiscoveryItem[]) {
+    const discovered = discoveredActuators.map<DiscoveredActuator<PhosconActuatorTypeEnum>>(
+      ds =>
+        ({
+          uid: ds.uniqueid,
+          name: ds.name,
+          foreignType: ds.type,
+          // TODO state ook meegeven ?
+          // TODO modelid ook meegeven ?  of verwerken in type ?
+        } as DiscoveredActuator<PhosconActuatorTypeEnum>),
+    )
+    this.discoverActuators(discovered, ACTUATOR_TYPE_MAPPERS, stateLogger)
+    /*
     // configuration pre-processing
     const actuatorConfigRaw = this._config.get<ChannelConfigRaw<CommandTypeEnum, unknown>>(ACTUATOR_CONFIGURATION)
     if (!actuatorConfigRaw) this._log.warn(ACTUATOR_CONFIGURATION + EMPTY_ERROR_MSG)
@@ -124,62 +138,60 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconState, Phoscon
     const prefix = this._config.get<string>('mqtt.topicPrefix')
     const mqttTopics = this._actuatorChannels.all.map<string>(a => commandTemplate({ prefix, actuatorName: a.name }))
     this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
+*/
   }
 
   private mqttCallback(actuatorName: string, cmd: Command) {
     //TODO handle messages received from MQTT
-    const [channel, command] = this._actuatorChannels.toForeign(actuatorName, cmd)
-    this._axios.put(`lights/${channel.uid}/state`, command)
+    // const [channel, command] = this._actuatorChannels.toForeign(actuatorName, cmd)
+    // this._axios.put(`lights/${channel.uid}/state`, command)
   }
-*/
 
-  private async configureSensors() {
+  private async configureSensors(
+    discoveredSensors: PhosconSensorDiscoveryItem[],
+    discoveredActuators: PhosconActuatorDiscoveryItem[],
+  ) {
     // configuration pre-processing
     const sensorConfigRaw = this._config.get<ChannelConfigRaw<MeasurementTypeEnum, unknown>>(SENSOR_CONFIGURATION)
     if (!sensorConfigRaw) this._log.warn(SENSOR_CONFIGURATION + EMPTY_ERROR_MSG)
-    const sensorConfig = new ChannelConfig<MeasurementTypeEnum, unknown>(sensorConfigRaw)
 
     // discover sensor and actuators information from phoscon
-    // const discoveredSensors_old = await this._axios.get<PhosconDiscoveryItem[]>('sensors')
-    // const discoveredActuators_old = await this._axios.get<PhosconDiscoveryItem[]>('lights')
-    const discoveredSensors = await this._axios.get<Record<number, PhosconSensorDiscoveryItem>>('sensors')
-    const discoveredActuators = await this._axios.get<Record<number, PhosconActuatorDiscoveryItem>>('lights')
-    const discoveredBoth = Object.values({ ...discoveredActuators.data, ...discoveredSensors.data }).map(ds => ({
+    const discovered = [...discoveredActuators, ...discoveredSensors].map(ds => ({
       uid: ds.uniqueid,
       name: ds.name,
-      foreignTypeName: ds.type as PhosconSensorStateTypeEnum,
+      foreignType: ds.type as PhosconSensorStateTypeEnum,
       state: ds.state,
     }))
-    const initialStateProcessor = (state: PhosconState, channel: SensorChannel<PhosconState>) =>
-      this.wsEventHandler({ data: JSON.stringify({ state, uniqueid: channel.uid }) })
-    const stateLogger = (state: PhosconState) => JSON.stringify(state)
-    this.sensorDiscovery(discoveredBoth, initialStateProcessor, stateLogger)
-    debugger
+    this.discoverSensors(discovered, SENSOR_TYPE_MAPPERS, stateLogger)
+
+    // Send initial state values
+    discovered.filter(ds => !this.sensorToBeIgnored(ds.uid)).forEach(ds => this.sendSensorStateUpdate(ds.uid, ds.state))
+
+    // Start the sensors readout through WebSocket
+    const eventUrl = this._config.get<string>(EVENT_URL, '')
+    if (!eventUrl) {
+      this._log.error(EVENT_URL + EMPTY_ERROR_MSG)
+      return
+    }
+    this._log.log(`configuration done, starting the listener`)
+    const ws = new WebSocket(eventUrl)
+    ws.onmessage = (event: WebSocket.MessageEvent) => this.wsEventHandler(event)
   }
 
   // Phoscon SSE link event handler
-  private wsEventHandler(event: WebSocket.MessageEvent | { data: string }) {
-    if (!this._processingStarted) {
-      this._log.log(`processing of Phoscon events started`)
-      this._processingStarted = true
-    }
-    const now = new Date()
+  private wsEventHandler(event: WebSocket.MessageEvent) {
     const payload: PhosconEvent = JSON.parse(event.data.toString())
     //{"e":"changed","id":"4","r":"sensors","state":{"buttonevent":1002,"lastupdated":"2022-09-13T16:16:55.915"},"t":"event","uniqueid":"00:12:4b:00:22:42:41:25-01-0006"}
-    if (payload.state && payload?.state['buttonevent']) console.log(payload.state)
+    if (payload.state && payload?.state['buttonevent']) {
+      //TODO nog nakijken of buttonpressed anders te verwerken
+      console.log(payload.state)
+    }
     try {
-      const state = payload.state
-      if (state && payload.r !== 'groups' && !this._ignoreIds.includes(parseInt(payload.id))) {
-        // if attr property is present then packet is repeat config
-        // state change event
-        //TODO transformer voor presence toevoegen
-        //TODO unit toevoegen aan SensorReading
-        //TODO stringValue toevoegen aan SensorReading
-        const channel = super.getSensor(payload.uniqueid)
-        const tr = channel.transformer(state)
-        debugger
-        // this._sensorChannels.sendUpdate(this._mqttDriver, payload.uniqueid, payload.state, 'phoscon', now)
-        // debugger
+      const state: PhosconState = payload?.state
+      const uid = payload.uniqueid
+      if (state && payload?.r !== 'groups' && !this.sensorToBeIgnored(uid)) {
+        // if attr property is present then packet is repeat config state event
+        this.sendSensorStateUpdate(uid, state)
       }
     } catch (error) {
       this._log.error(JSON.stringify(error))

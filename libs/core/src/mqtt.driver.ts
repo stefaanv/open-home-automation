@@ -62,11 +62,13 @@ export class MqttDriver {
     if (this._callback) this._callback(actuatorName, payload)
   }
 
-  public sendMeasurement(update: SensorReading<SensorReadingValue>) {
+  public sendSensorStateUpdate(sensorName: string, update: SensorReading) {
     if (this._outSensorReadingMqttTopicTemplate) {
-      const mqttTopic = this._outSensorReadingMqttTopicTemplate({ sensorName: update.name, prefix: this._topicPrefix })
-      // this._log.debug(`sending update to ${mqttTopic}`)
-      this._mqttClient.publish(mqttTopic, JSON.stringify(update))
+      const mqttTopic = this._outSensorReadingMqttTopicTemplate({ sensorName, prefix: this._topicPrefix })
+      const stringified = JSON.stringify(update)
+      this._log.debug(`sending update to ${mqttTopic}: ${stringified}`)
+
+      this._mqttClient.publish(mqttTopic, stringified)
     }
   }
 }

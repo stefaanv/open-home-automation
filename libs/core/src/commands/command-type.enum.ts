@@ -1,1 +1,1 @@
-export type CommandTypeEnum = 'on-off' | 'roller-shutter'
+export type ActuatorTypeEnum = undefined | 'relay' | 'colored-light' | 'roller-shutter'

@@ -1,5 +1,5 @@
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
-import { CommandTypeEnum } from '@core/commands/command-type.enum'
+import { ActuatorTypeEnum } from '@core/commands/command-type.enum'
 import { RollerShutterActions, RollerShutterCommand } from '@core/commands/roller-shutter'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { Moving } from '@core/sensor-reading-data-types'
@@ -22,7 +22,7 @@ export const ROLLERSHUTTER_COMMAND_TRANSLATION: Record<RollerShutterActions, str
 export const ACTUATOR_NAME_TRANSLATION = { 'living zuid': 'rl_living_zuid' }
 export const SENSOR_NAME_TRANSLATION = { 'Sun sensor': 'buiten_oost_lumi', 'living zuid': 'rl_living_zuid' }
 
-export const ACTUATOR_TYPE_MAPPERS: Record<CommandTypeEnum, TahomaActuatorTypeMapper> = {
+export const ACTUATOR_TYPE_MAPPERS: Record<ActuatorTypeEnum, TahomaActuatorTypeMapper> = {
   'on-off': undefined,
   'roller-shutter': {
     transformer: (cmd: RollerShutterCommand, channel: TahomaActuatorChannel) => {
