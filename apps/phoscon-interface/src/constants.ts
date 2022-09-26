@@ -2,7 +2,7 @@ import { ActuatorTypeMapper } from '@core/channel-service/types'
 import { Command } from '@core/commands/command.type'
 import { OnOffCommand } from '@core/commands/on-off.type'
 import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from '@core/measurement-type.enum'
-import { Numeric, OnOff, OpenClosed, Presence, SwitchPressed } from '@core/sensor-reading-data-types'
+import { Numeric, OnOff, OpenClosed, Presence, SwitchPressed } from '@core/sensor-reading-values'
 import {
   HumidityState,
   LightLevelState,

@@ -9,7 +9,7 @@ import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 import { DiscoveredActuator, DiscoveredSensor, SensorTypeMapper, ActuatorTypeMapper } from './types'
 import { SensorReading } from '@core/sensor-reading.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { ActuatorTypeEnum } from '@core/commands/command-type.enum'
+import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 
 /**
  * Verantwoordelijkheden

@@ -1,4 +1,4 @@
-import { ActuatorTypeEnum } from '@core/commands/command-type.enum'
+import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { Command } from '@core/commands/command.type'
 import { ChannelBase } from './channel-base.class'
 

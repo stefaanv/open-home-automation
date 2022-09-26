@@ -1,6 +1,6 @@
 import { LoggingService } from '@core/logging.service'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { SensorReadingValue } from '@core/sensor-reading-data-types'
+import { SensorReadingValue } from '@core/sensor-reading-values'
 import { SensorReading } from '@core/sensor-reading.type'
 import { ChannelBase } from './channel-base.class'
 

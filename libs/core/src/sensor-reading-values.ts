@@ -1,6 +1,12 @@
 import { NumericMeasurementTypeEnum } from './measurement-type.enum'
 
 export type SensorReadingValue = Numeric | OnOff | OpenClosed | Presence | SwitchPressed | Moving
+export type TimedSensorReadingValue = {
+  value: SensorReadingValue
+  time: Date
+}
+
+export type NamedTimedSensorReadingValue = TimedSensorReadingValue & { name: string }
 
 export type Numeric<T = NumericMeasurementTypeEnum> = {
   value: number

@@ -1,7 +1,7 @@
-import { ActuatorTypeEnum } from '@core/commands/command-type.enum'
+import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { Command } from '@core/commands/command.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { SensorReadingValue } from '@core/sensor-reading-data-types'
+import { SensorReadingValue } from '@core/sensor-reading-values'
 
 export type SensorChannelTransformer<TFVS> = (state: TFVS) => SensorReadingValue
 export type ActuatorChannelTransformer = (cmd: Command) => any

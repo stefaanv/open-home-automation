@@ -1,4 +1,4 @@
-import { ActuatorTypeEnum } from '@core/commands/command-type.enum'
+import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { ConfigService } from '@nestjs/config'
 

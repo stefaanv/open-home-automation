@@ -1,8 +1,8 @@
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
-import { ActuatorTypeEnum } from '@core/commands/command-type.enum'
+import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { RollerShutterActions, RollerShutterCommand } from '@core/commands/roller-shutter'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { Moving } from '@core/sensor-reading-data-types'
+import { Moving } from '@core/sensor-reading-values'
 import {
   TahomaActuatorChannel,
   TahomaActuatorTypeMapper,

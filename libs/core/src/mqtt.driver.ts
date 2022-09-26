@@ -5,7 +5,7 @@ import { LoggingService } from './logging.service'
 import handlebars from 'handlebars'
 import { SensorReading } from './sensor-reading.type'
 import { Command } from '@core/commands/command.type'
-import { SensorReadingValue } from './sensor-reading-data-types'
+import { SensorReadingValue } from './sensor-reading-values'
 
 export type CommandCallback = (actuatorName: string, command: Command) => void
 
