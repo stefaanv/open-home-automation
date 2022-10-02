@@ -124,7 +124,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
         this._log.log(logMessage)
 
         // push new sensor to channel list
-        const sensor = new NewSensor(id, topic, valueType, ds.type)
+        const sensor = new NewSensor(id, topic, ds.type, valueType)
         this._sensorChannels.push(sensor)
 
         // send the initial state to the hub
@@ -137,7 +137,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
       .filter(s => {
         const eqCh = this._sensorChannels.find(ch => ch.id === s.id)
         if (eqCh) {
-          if (eqCh.topic === s.topicInfix && eqCh.valueType === s.valuetype)
+          if (eqCh.topic === s.topicInfix && eqCh.measurementType === s.valuetype)
             this._log.warn(`Channel with equal UID ${s.id} like ${s.topicInfix} already discovered`)
           else
             this._log.error(
@@ -174,7 +174,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
       .filter(s => !this._actuatorIgnoreList.includes(s.uniqueid as PhosconUID))
       .forEach(ds => {
         const id = ds.uniqueid as PhosconUID
-        const { nameExtension, actuatorType } = ACTUATOR_TYPE_MAPPERS[ds.type]
+        const { nameExtension, measurementType, commandType } = ACTUATOR_TYPE_MAPPERS[ds.type]
         const matchingFilter = this._interfaceConfig.actuatorDiscover.find(f => regexTest(ds.name, f.filter))
         if (!matchingFilter) {
           const msg =
@@ -183,7 +183,19 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
           this._log.warn(msg)
           return // ignore this sensor
         }
-        debugger
+        const topic = regexExtract(ds.name, matchingFilter.filter, 'name') + nameExtension
+
+        const logMessage =
+          `Found actuator "${topic}", type=${commandType}/${measurementType}, id=${ds.uniqueid}` +
+          `, state=${JSON.stringify(ds.state)}`
+        this._log.log(logMessage)
+
+        // push new sensor to channel list
+        const actuator = new NewActuator(id, topic, ds.type, measurementType, commandType)
+        this._actuatorChannels.push(actuator)
+
+        // send the initial state to the hub
+        this.sendSensorStateUpdate(id, ds.state)
       })
 
     /*
@@ -287,7 +299,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
     const update = {
       origin: this._interfaceName,
       time: now,
-      type: channel.valueType,
+      type: channel.measurementType,
       value: measurementValue,
     }
 

@@ -84,7 +84,9 @@ export class InterfaceBase<TUID, FTE extends string> {
   }
 
   protected getSensorChannel(id: TUID): NewSensor<TUID, FTE> | undefined {
-    const channel = this._sensorChannels.find(sc => sc.id === id)
-    return channel
+    const sensorChannel = this._sensorChannels.find(sc => sc.id === id)
+    if (sensorChannel) return sensorChannel
+    const actuatorChannel = this._actuatorChannels.find(sc => sc.id === id)
+    return actuatorChannel
   }
 }

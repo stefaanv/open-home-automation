@@ -18,7 +18,6 @@ export const PhosconSensorTypeEnumNames = [
   'ZHAOpenClose',
   'ZHAAirQuality',
   'ZHASwitch',
-  'On/Off plug-in unit',
 ] as const
 export type PhosconSensorStateTypeEnum = typeof PhosconSensorTypeEnumNames[number]
 

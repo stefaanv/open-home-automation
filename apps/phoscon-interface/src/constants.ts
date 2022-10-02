@@ -33,10 +33,6 @@ export const SENSOR_TYPE_MAPPERS: Record<
     nameExtension: '_sw',
     measurementType: 'switch' as MeasurementTypeEnum,
   },
-  'On/Off plug-in unit': {
-    nameExtension: '_cnct',
-    measurementType: 'contact' as MeasurementTypeEnum,
-  },
   ZHAAirQuality: {
     nameExtension: '_airq',
     measurementType: 'air-quality' as MeasurementTypeEnum,
@@ -45,18 +41,21 @@ export const SENSOR_TYPE_MAPPERS: Record<
 
 export const ACTUATOR_TYPE_MAPPERS: Record<
   PhosconActuatorCommandTypeEnum,
-  { nameExtension: string; actuatorType: ActuatorTypeEnum | undefined }
+  { nameExtension: string; measurementType: MeasurementTypeEnum; commandType: ActuatorTypeEnum }
 > = {
   'On/Off plug-in unit': {
-    actuatorType: 'relay',
+    measurementType: 'on-off',
+    commandType: 'relay',
     nameExtension: '_relay',
   },
   'Range extender': {
-    actuatorType: undefined,
+    measurementType: 'on-off',
+    commandType: 'relay',
     nameExtension: '_unused',
   },
   'Color temperature light': {
-    actuatorType: undefined,
+    measurementType: 'illuminance',
+    commandType: 'colored-light',
     nameExtension: '_unused',
   },
 }

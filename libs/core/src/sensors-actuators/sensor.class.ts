@@ -3,17 +3,17 @@ import { TimedSensorReadingValue } from '@core/sensor-reading-values'
 import { SensorActuatorBase } from './sensor-actuator-base.class'
 
 export class NewSensor<TUID, FTE extends string> extends SensorActuatorBase<TUID, FTE> {
-  valueType: MeasurementTypeEnum
+  measurementType: MeasurementTypeEnum
 
   constructor(
     id: TUID,
     topic: string,
-    valueType: MeasurementTypeEnum,
     foreignValueType: FTE,
+    measurementType: MeasurementTypeEnum,
     state?: TimedSensorReadingValue,
   ) {
     super(id, topic, foreignValueType)
-    this.valueType = valueType
+    this.measurementType = measurementType
     this.state = state
   }
   /*

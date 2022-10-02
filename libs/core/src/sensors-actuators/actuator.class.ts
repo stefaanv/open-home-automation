@@ -10,11 +10,11 @@ export class NewActuator<TUID, FTE extends string> extends NewSensor<TUID, FTE> 
     id: TUID,
     topic: string,
     foreignType: FTE,
-    valueType: MeasurementTypeEnum,
+    measurementType: MeasurementTypeEnum,
     commandType: ActuatorTypeEnum,
     state?: TimedSensorReadingValue,
   ) {
-    super(id, topic, valueType, foreignType, state)
+    super(id, topic, foreignType, measurementType, state)
     this.commandType = commandType
   }
 }
