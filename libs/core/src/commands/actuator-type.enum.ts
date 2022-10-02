@@ -1,1 +1,1 @@
-export type ActuatorTypeEnum = undefined | 'relay' | 'colored-light' | 'roller-shutter'
+export type ActuatorTypeEnum = 'relay' | 'colored-light' | 'roller-shutter'

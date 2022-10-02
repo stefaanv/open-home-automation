@@ -2,6 +2,13 @@ import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { Command } from '@core/commands/command.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-values'
+import { NewActuator } from '@core/sensors-actuators/actuator.class'
+import { NewSensor } from '@core/sensors-actuators/sensor.class'
+
+// TUID
+export type PhosconUID = string & { type: 'phoscon-uid' }
+export type PhosconSensor = NewSensor<PhosconUID, PhosconForeignTypeEnum>
+export type PhosconActuator = NewActuator<PhosconUID, PhosconForeignTypeEnum>
 
 export const PhosconSensorTypeEnumNames = [
   'ZHAPresence',
@@ -20,7 +27,10 @@ export const PhosconActuatorTypeEnumNames = [
   'Range extender',
   'Color temperature light',
 ] as const
-export type PhosconActuatorTypeEnum = typeof PhosconActuatorTypeEnumNames[number]
+
+export type PhosconActuatorCommandTypeEnum = typeof PhosconActuatorTypeEnumNames[number]
+
+export type PhosconForeignTypeEnum = PhosconSensorStateTypeEnum | PhosconActuatorCommandTypeEnum
 
 export const PhosconActuatorModelIds = ['RaspBee II', 'SP 220', 'ConBee II', 'TS0207', 'CCT Light']
 
@@ -34,6 +44,7 @@ export type PhosconEvent = {
   state: PhosconState | undefined
   uniqueid: string
 }
+
 export type PhosconDiscoveryItemBase = {
   uid: number
   etag: string
@@ -53,7 +64,7 @@ export type PhosconSensorDiscoveryItem = PhosconDiscoveryItemBase & {
 }
 
 export type PhosconActuatorDiscoveryItem = PhosconDiscoveryItemBase & {
-  type: PhosconActuatorTypeEnum
+  type: PhosconActuatorCommandTypeEnum
   hascolor: boolean
   manufacturer: string
   pointsymbol: any
@@ -74,42 +85,49 @@ export type PhosconAttr = {
 }
 
 export type PhosconState = PhosconBaseState &
-  (PresenceState | LightLevelState | TemperatureState | HumidityState | OpenClosedState | SwitchState)
+  (
+    | PhosconPresenceState
+    | PhosconLightLevelState
+    | PhosconTemperatureState
+    | PhosconHumidityState
+    | PhosconOpenClosedState
+    | PhosconSwitchState
+  )
 
 export type PhosconBaseState = {
   lastupdated: string //date
 }
 
-export type PresenceState = {
+export type PhosconPresenceState = {
   presence: boolean | undefined
   on: boolean | undefined
 }
 
-export type SwitchState = {
+export type PhosconSwitchState = {
   buttonevent: number
 }
 
-export type LightLevelState = {
+export type PhosconLightLevelState = {
   dark: boolean
   daylight: boolean
   lightlevel: number
   lux: number
 }
 
-export type TemperatureState = {
+export type PhosconTemperatureState = {
   temperature: number
 }
 
-export type HumidityState = {
+export type PhosconHumidityState = {
   humidity: number
 }
 
-export type OpenClosedState = {
+export type PhosconOpenClosedState = {
   open: boolean | undefined
   on: boolean | undefined
 }
 
-export type OnOffState = {
+export type PhosconOnOffState = {
   on: boolean | undefined
 }
 
@@ -120,7 +138,7 @@ export type PhosconOnOffCommand = {
   // ct: number
   on: boolean
 }
-export type PhosconCommand = PhosconOnOffCommand
+export type PhosconCommand = PhosconOnOffCommand | undefined
 export type PhosconActuatorCommandTransformer = (state: Command) => PhosconCommand
 export type PhosconSensorValueTransformer = (state: PhosconState) => SensorReadingValue
 export type PhosconSensorTypeMapper = {

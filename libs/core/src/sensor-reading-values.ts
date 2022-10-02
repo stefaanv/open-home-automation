@@ -1,6 +1,7 @@
-import { NumericMeasurementTypeEnum } from './measurement-type.enum'
+import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from './measurement-type.enum'
 
 export type SensorReadingValue = Numeric | OnOff | OpenClosed | Presence | SwitchPressed | Moving
+export type SensorReadingValueWithoutType = Omit<SensorReadingValue, 'type'> & { type?: MeasurementTypeEnum }
 export type TimedSensorReadingValue = {
   value: SensorReadingValue
   time: Date

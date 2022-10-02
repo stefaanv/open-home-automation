@@ -1,7 +1,3 @@
-import { ActuatorChannelList } from '@core/channels/actuator-channel-list.class'
-import { ActuatorChannel } from '@core/channels/actuator-channel.class'
-import { SensorChannelList } from '@core/channels/sensor-channel-list.class'
-import { SensorChannel } from '@core/channels/sensor-channel.class'
 import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { Command } from '@core/commands/command.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
@@ -46,10 +42,6 @@ export type TahomaEvent = {
   name: TahomaEventNamesEnum
 }
 
-export class TahomaSensorChannel extends SensorChannel<string> {}
-export class TahomaActuatorChannel extends ActuatorChannel<string> {}
-export class TahomaSensorChannelList extends SensorChannelList<string> {}
-export class TahomaActuatorChannelList extends ActuatorChannelList<string> {}
 export type TahomaActuatorCommandTransformer = (state: Command) => any
 export type TahomaSensorValueTransformer = (state: TahomaState) => SensorReadingValue
 export type TahomaSensorTypeMapper = {

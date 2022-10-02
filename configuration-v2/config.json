@@ -1,6 +1,6 @@
 {
   "mqtt": {
-    "broker": "mqtt://192.168.0.10",
+    "broker": "mqtt://localhost",
     "topicPrefix": "oha2",
     "measurementUpdateTemplate": "{{prefix}}/sensor-reading/{{sensorName}}",
     "commandTemplate": "{{prefix}}/command/{{actuatorName}}",

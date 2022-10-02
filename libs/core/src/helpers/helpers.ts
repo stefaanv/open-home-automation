@@ -3,7 +3,7 @@ export function regexTest(s: string, r: RegExp) {
 }
 
 export function regexExtract(s: string, r: RegExp, groupName: string): string | undefined {
-  const groups = r.exec(s).groups
+  const groups = r.exec(s)?.groups
   if (!groups) return undefined
   return groups[groupName]
 }

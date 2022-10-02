@@ -4,18 +4,18 @@ export interface ChannelConfigRaw<TType, TInstanceDef> {
   define: Array<TInstanceDef> | undefined
 }
 
-export interface InstanceDefine<TType, FSTE> {
-  uid: string
+export interface InstanceDefine<TUID, TType, FTE> {
+  uid: TUID
   name: string
   type: TType
-  foreignType: FSTE
+  foreignType: FTE
 }
 
-export class ChannelConfig<TType extends string, FSTE extends string> {
+export class ChannelConfigBase<TUID, TType extends string, FTE extends string> {
   public ignore: RegExp
   public discover: Array<{ filter: RegExp; type: TType | undefined }> | undefined
-  public define: Array<InstanceDefine<TType, FSTE>> | undefined
-  constructor(config: ChannelConfigRaw<TType, InstanceDefine<TType, FSTE>>) {
+  public define: Array<InstanceDefine<TUID, TType, FTE>> | undefined
+  constructor(config: ChannelConfigRaw<TType, InstanceDefine<TUID, TType, FTE>>) {
     this.ignore = new RegExp(config.ignore)
     this.discover = !config.discover
       ? undefined

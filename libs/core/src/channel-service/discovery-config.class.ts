@@ -5,41 +5,45 @@ import { ConfigService } from '@nestjs/config'
 export type DiscoveryConfigString = { filter: string; type: MeasurementTypeEnum | ActuatorTypeEnum | undefined }
 export type DiscoveryConfigRegex = { filter: RegExp; type: MeasurementTypeEnum | ActuatorTypeEnum | undefined }
 
-export type SensorDefinitionConfig<FSTE extends string> = {
-  uid: string
-  name: string
-  type: MeasurementTypeEnum
-  foreignType: FSTE
+export type SensorDefinitionConfig<FTE extends string> = {
+  id: string
+  topicInfix: string
+  valuetype: MeasurementTypeEnum
+  foreignType: FTE
 }
 
-export type ActuatorDefinitionConfig<FATE extends string> = {
+export type ActuatorDefinitionConfig<FTE extends string> = {
   uid: string
   name: string
   type: ActuatorTypeEnum
-  foreignType: FATE
+  foreignType: FTE
 }
 
-export class InterfaceConfig<FSTE extends string, FATE extends string> {
+export class InterfaceConfig<FTE extends string> {
   readonly sensorIgnore: RegExp
   readonly sensorDiscover: DiscoveryConfigRegex[]
-  readonly sensorDefinition: SensorDefinitionConfig<FSTE>[]
+  readonly sensorDefinition: SensorDefinitionConfig<FTE>[]
   readonly actuatorIgnore: RegExp
   readonly actuatorDiscover: DiscoveryConfigRegex[]
-  readonly actuatorDefinition: ActuatorDefinitionConfig<FATE>[]
+  readonly actuatorDefinition: ActuatorDefinitionConfig<FTE>[]
 
   constructor(config: ConfigService, interfaceName: string) {
-    this.sensorIgnore = new RegExp(config.get<string>([interfaceName, 'sensors', 'ignore'].join('.')))
+    this.sensorIgnore = new RegExp(config.get<string>([interfaceName, 'sensors', 'ignore'].join('.'), ''))
     this.sensorDiscover = config
-      .get<DiscoveryConfigString[]>([interfaceName, 'sensors', 'discover'].join('.'))
+      .get<DiscoveryConfigString[]>([interfaceName, 'sensors', 'discover'].join('.'), [])
       .map(e => ({ filter: new RegExp(e.filter), type: e.type }))
-    this.sensorDefinition = config.get<SensorDefinitionConfig<FSTE>[]>([interfaceName, 'sensors', 'define'].join('.'))
+    this.sensorDefinition = config.get<SensorDefinitionConfig<FTE>[]>(
+      [interfaceName, 'sensors', 'define'].join('.'),
+      [],
+    )
 
-    this.actuatorIgnore = new RegExp(config.get<string>([interfaceName, 'actuators', 'ignore'].join('.')))
+    this.actuatorIgnore = new RegExp(config.get<string>([interfaceName, 'actuators', 'ignore'].join('.'), ''))
     this.actuatorDiscover = config
-      .get<DiscoveryConfigString[]>([interfaceName, 'actuators', 'discover'].join('.'))
+      .get<DiscoveryConfigString[]>([interfaceName, 'actuators', 'discover'].join('.'), [])
       .map(e => ({ filter: new RegExp(e.filter), type: e.type }))
-    this.actuatorDefinition = config.get<ActuatorDefinitionConfig<FATE>[]>(
+    this.actuatorDefinition = config.get<ActuatorDefinitionConfig<FTE>[]>(
       [interfaceName, 'actuators', 'define'].join('.'),
+      [],
     )
   }
 }

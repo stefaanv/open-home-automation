@@ -1,109 +1,67 @@
 import { ActuatorTypeMapper } from '@core/channel-service/types'
+import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { Command } from '@core/commands/command.type'
 import { OnOffCommand } from '@core/commands/on-off.type'
-import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from '@core/measurement-type.enum'
-import { Numeric, OnOff, OpenClosed, Presence, SwitchPressed } from '@core/sensor-reading-values'
-import {
-  HumidityState,
-  LightLevelState,
-  OnOffState,
-  OpenClosedState,
-  PhosconActuatorTypeMapper,
-  PhosconReportedValue,
-  PhosconSensorTypeMapper,
-  PhosconState,
+import { MeasurementTypeEnum } from '@core/measurement-type.enum'
+import { PhosconSensorStateTypeEnum, PhosconActuatorCommandTypeEnum, PhosconOnOffCommand } from './type'
+
+export const SENSOR_TYPE_MAPPERS: Record<
   PhosconSensorStateTypeEnum,
-  PresenceState,
-  SwitchState,
-  TemperatureState,
-  PhosconActuatorTypeEnum,
-  PhosconOnOffCommand,
-} from './type'
-
-const numericTransformer =
-  (transformer: (state: PhosconState) => number, unit: string, subType: NumericMeasurementTypeEnum) =>
-  (state: PhosconState) => {
-    const value = transformer(state)
-    return {
-      value,
-      unit,
-      formattedValue: `${value.toFixed(0)} ${unit}`,
-      type: subType,
-    } as Numeric
-  }
-
-export const SENSOR_TYPE_MAPPERS: Record<PhosconSensorStateTypeEnum, PhosconSensorTypeMapper> = {
+  { nameExtension: string; measurementType: MeasurementTypeEnum }
+> = {
   ZHALightLevel: {
     nameExtension: '_lumi',
     measurementType: 'illuminance' as MeasurementTypeEnum,
-    transformer: numericTransformer(state => (state as LightLevelState).lux, 'lux', 'illuminance'),
   },
   ZHAPresence: {
     nameExtension: '_pres',
     measurementType: 'presence' as MeasurementTypeEnum,
-    transformer: state =>
-      ((state as PresenceState).presence ?? (state as PresenceState).on ? 'present' : 'absent') as Presence,
   },
   ZHATemperature: {
     nameExtension: '_temp',
     measurementType: 'temperature' as MeasurementTypeEnum,
-    transformer: numericTransformer(state => (state as TemperatureState).temperature / 100, '°C', 'temperature'),
   },
   ZHAHumidity: {
     nameExtension: '_humi',
     measurementType: 'humidity' as MeasurementTypeEnum,
-    transformer: numericTransformer(state => (state as HumidityState).humidity / 100, '%rh', 'humidity'),
   },
   ZHAOpenClose: {
     nameExtension: '_cnct',
     measurementType: 'contact' as MeasurementTypeEnum,
-    transformer: state =>
-      ((state as OpenClosedState).open ?? (state as OpenClosedState).on ? 'open' : 'closed') as OpenClosed,
   },
   ZHASwitch: {
     nameExtension: '_sw',
     measurementType: 'switch' as MeasurementTypeEnum,
-    transformer: state =>
-      ({ state: (state as SwitchState).buttonevent === 1002 ? 'shortpress' : undefined } as SwitchPressed),
   },
   'On/Off plug-in unit': {
     nameExtension: '_cnct',
     measurementType: 'contact' as MeasurementTypeEnum,
-    transformer: state => ((state as OnOffState).on ? 'on' : 'off') as OnOff,
   },
   ZHAAirQuality: {
     nameExtension: '_airq',
     measurementType: 'air-quality' as MeasurementTypeEnum,
-    transformer: numericTransformer(state => (state as TemperatureState).temperature / 100, '°C', 'temperature'),
   },
 }
 
-export const ACTUATOR_TYPE_MAPPERS: Record<PhosconActuatorTypeEnum, ActuatorTypeMapper> = {
+export const ACTUATOR_TYPE_MAPPERS: Record<
+  PhosconActuatorCommandTypeEnum,
+  { nameExtension: string; actuatorType: ActuatorTypeEnum | undefined }
+> = {
   'On/Off plug-in unit': {
     actuatorType: 'relay',
     nameExtension: '_relay',
-    transformer: cmd => {
-      const request: boolean = (cmd as OnOffCommand) === 'on'
-      const result = { on: request }
-      return result
-    },
   },
   'Range extender': {
     actuatorType: undefined,
     nameExtension: '_unused',
-    transformer: function (state: Command): PhosconOnOffCommand {
-      throw new Error('Function not implemented.')
-    },
   },
   'Color temperature light': {
     actuatorType: undefined,
     nameExtension: '_unused',
-    transformer: function (state: Command): PhosconOnOffCommand {
-      throw new Error('Function not implemented.')
-    },
   },
 }
 
+/*
 export const SENSOR_VALUE_MAPPERS: Record<
   MeasurementTypeEnum,
   {
@@ -113,28 +71,28 @@ export const SENSOR_VALUE_MAPPERS: Record<
   }
 > = {
   temperature: {
-    transformer: state => (state as TemperatureState).temperature / 100,
+    transformer: state => (state as PhosconTemperatureState).temperature / 100,
     unit: '°C',
     formattedValue: (value, unit) => (value as number).toFixed(1) + ' ' + unit,
   },
   'air-quality': {
-    transformer: state => (state as TemperatureState).temperature / 100,
+    transformer: state => (state as PhosconTemperatureState).temperature / 100,
     unit: '',
     formattedValue: (value, unit) => (value as number).toFixed(1) + ' ' + unit,
   },
   humidity: {
-    transformer: state => (state as HumidityState).humidity / 100,
+    transformer: state => (state as PhosconHumidityState).humidity / 100,
     unit: '%rh',
     formattedValue: (value, unit) => (value as number).toFixed(0) + ' ' + unit,
   },
   illuminance: {
-    transformer: state => (state as LightLevelState).lux,
+    transformer: state => (state as PhosconLightLevelState).lux,
     unit: 'Lux',
     formattedValue: (value, unit) => (value as number).toFixed(0) + ' ' + unit,
   },
   presence: {
     transformer: state => {
-      const presenceValue = state as PresenceState
+      const presenceValue = state as PhosconPresenceState
       return presenceValue.presence ?? presenceValue.on ? 'present' : 'absent'
     },
     unit: '',
@@ -142,7 +100,7 @@ export const SENSOR_VALUE_MAPPERS: Record<
   },
   contact: {
     transformer: state => {
-      const contactValue = state as OpenClosedState
+      const contactValue = state as PhosconOpenClosedState
       return contactValue.open ?? !contactValue.on ? 'open' : 'closed'
     },
     unit: '',
@@ -150,7 +108,7 @@ export const SENSOR_VALUE_MAPPERS: Record<
   },
   switch: {
     transformer: state => {
-      const switchValue = state as SwitchState
+      const switchValue = state as PhosconSwitchState
       return switchValue.buttonevent === 1002 ? 'shortpress' : undefined
     },
     unit: '',
@@ -159,7 +117,7 @@ export const SENSOR_VALUE_MAPPERS: Record<
   'on-off': {
     //TODO
     transformer: state => {
-      return (state as OnOffState) ? 'on' : 'off'
+      return (state as PhosconOnOffState) ? 'on' : 'off'
     },
     unit: '',
     formattedValue: (value, unit) => value as string,
@@ -180,3 +138,4 @@ export const SENSOR_VALUE_MAPPERS: Record<
     formattedValue: (value, unit) => '',
   },
 }
+*/

@@ -12,18 +12,18 @@ export type SensorTypeMapper<TFVS> = {
 }
 export type ActuatorTypeMapper = {
   nameExtension: string
-  actuatorType: ActuatorTypeEnum
+  actuatorType?: ActuatorTypeEnum
   transformer: ActuatorChannelTransformer
 }
-export type DiscoveredSensor<FSTE, TFVS> = {
+export type DiscoveredSensor<FTE, TFVS> = {
   uid: string
   name: string
-  foreignType: FSTE
+  foreignType: FTE
   state: TFVS
 }
-export type DiscoveredActuator<FATE> = {
+export type DiscoveredActuator<FTE> = {
   uid: string
   name: string
   modelId: string
-  foreignType: FATE
+  foreignType: FTE
 }

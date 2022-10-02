@@ -8,13 +8,14 @@ import { ChannelConfigBase } from './channel-config-base.class'
  * TActuatorChannelDef: vorm actuator channel definitie
  */
 export interface InterfaceConfiguration<
+  TUID,
   TGeneral,
-  TSensorTypes,
-  TSensorChannelDef,
-  TActuatorTypes,
-  TActuatorChannelDef,
+  TSensorTypes extends string,
+  TSensorChannelDef extends string,
+  TActuatorTypes extends string,
+  TActuatorChannelDef extends string,
 > {
   general: TGeneral
-  sensors: ChannelConfigBase<string, TSensorTypes, TSensorChannelDef>
-  actuators: ChannelConfigBase<string, TActuatorTypes, TActuatorChannelDef>
+  sensors: ChannelConfigBase<TUID, TSensorTypes, TSensorChannelDef>
+  actuators: ChannelConfigBase<TUID, TActuatorTypes, TActuatorChannelDef>
 }
