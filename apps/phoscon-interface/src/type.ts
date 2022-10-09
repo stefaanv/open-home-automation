@@ -2,13 +2,13 @@ import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { Command } from '@core/commands/command.type'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { SensorReadingValue } from '@core/sensor-reading-values'
-import { NewActuator } from '@core/sensors-actuators/actuator.class'
-import { NewSensor } from '@core/sensors-actuators/sensor.class'
+import { Actuator } from '@core/sensors-actuators/actuator.class'
+import { Sensor } from '@core/sensors-actuators/sensor.class'
 
 // TUID
 export type PhosconUID = string & { type: 'phoscon-uid' }
-export type PhosconSensor = NewSensor<PhosconUID, PhosconForeignTypeEnum>
-export type PhosconActuator = NewActuator<PhosconUID, PhosconForeignTypeEnum>
+export type PhosconSensor = Sensor<PhosconUID, PhosconForeignTypeEnum>
+export type PhosconActuator = Actuator<PhosconUID, PhosconForeignTypeEnum>
 
 export const PhosconSensorTypeEnumNames = [
   'ZHAPresence',
@@ -83,58 +83,69 @@ export type PhosconAttr = {
   uniqueid: string
 }
 
-export type PhosconState = PhosconBaseState &
-  (
-    | PhosconPresenceState
-    | PhosconLightLevelState
-    | PhosconTemperatureState
-    | PhosconHumidityState
-    | PhosconOpenClosedState
-    | PhosconSwitchState
-  )
+export type PhosconState =
+  | PhosconPresenceState
+  | PhosconLightLevelState
+  | PhosconTemperatureState
+  | PhosconHumidityState
+  | PhosconOpenClosedState
+  | PhosconSwitchState
+  | PhosconOnOffState
+  | PhosconColoredLightState
 
 export type PhosconBaseState = {
-  lastupdated: string //date
+  lastupdated: Date
 }
 
-export type PhosconPresenceState = {
+export type PhosconPresenceState = PhosconBaseState & {
   presence: boolean | undefined
   on: boolean | undefined
 }
 
-export type PhosconSwitchState = {
+export type PhosconSwitchState = PhosconBaseState & {
   buttonevent: number
 }
 
-export type PhosconLightLevelState = {
+export type PhosconLightLevelState = PhosconBaseState & {
   dark: boolean
   daylight: boolean
   lightlevel: number
   lux: number
 }
 
-export type PhosconTemperatureState = {
+export type PhosconTemperatureState = PhosconBaseState & {
   temperature: number
 }
 
-export type PhosconHumidityState = {
+export type PhosconHumidityState = PhosconBaseState & {
   humidity: number
 }
 
-export type PhosconOpenClosedState = {
+export type PhosconOpenClosedState = PhosconBaseState & {
   open: boolean | undefined
   on: boolean | undefined
 }
 
-export type PhosconOnOffState = {
+export type PhosconOnOffState = PhosconBaseState & {
   on: boolean | undefined
+}
+
+export type PhosconColoredLightState = PhosconBaseState & {
+  bri: number
+  ct: number
+  on: boolean
+  reachable: boolean
+  alert: string
 }
 
 export type PhosconReportedValue = string | number | boolean | undefined
 
 export type PhosconOnOffCommand = {
-  // bri: number
-  // ct: number
+  on: boolean
+}
+export type PhosconColoredLightCommand = {
+  bri: number
+  ct: number
   on: boolean
 }
 export type PhosconCommand = PhosconOnOffCommand | undefined

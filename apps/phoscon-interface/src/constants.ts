@@ -1,7 +1,7 @@
 import { ActuatorTypeMapper } from '@core/channel-service/types'
 import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { Command } from '@core/commands/command.type'
-import { OnOffCommand } from '@core/commands/on-off.type'
+import { OnOffCommand } from '@core/commands/on-off.class'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { PhosconSensorStateTypeEnum, PhosconActuatorCommandTypeEnum, PhosconOnOffCommand } from './type'
 
@@ -54,9 +54,9 @@ export const ACTUATOR_TYPE_MAPPERS: Record<
     nameExtension: '_unused',
   },
   'Color temperature light': {
-    measurementType: 'illuminance',
+    measurementType: 'illuminance', //TODO moet een nieuw sensor type worden !
     commandType: 'colored-light',
-    nameExtension: '_unused',
+    nameExtension: '_clgt',
   },
 }
 

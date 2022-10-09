@@ -1,6 +1,6 @@
 import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from './measurement-type.enum'
 
-export type SensorReadingValue = Numeric | OnOff | OpenClosed | Presence | SwitchPressed | Moving
+export type SensorReadingValue = Numeric | OnOff | OpenClosed | Presence | SwitchPressed | Moving | ColoredLight
 export type SensorReadingValueWithoutType = Omit<SensorReadingValue, 'type'> & { type?: MeasurementTypeEnum }
 export type TimedSensorReadingValue = {
   value: SensorReadingValue
@@ -23,4 +23,13 @@ export type Presence = ('present' | 'absent' | undefined) & { type: 'presence' }
 export type SwitchPressed = {
   state: 'closed' | 'released' | 'shortpress' | 'longpress' | undefined
   pressDuration: number | undefined
-} & { type: 'switch' }
+  type: 'switch'
+}
+export type ColoredLight = {
+  brightness: number
+  colorTemperature: number
+  on: boolean
+  reachable: boolean
+  alert: string
+  type: 'colored-light'
+}

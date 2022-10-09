@@ -4,11 +4,9 @@ import * as mqtt from 'async-mqtt'
 import { LoggingService } from './logging.service'
 import handlebars from 'handlebars'
 import { SensorReading } from './sensor-reading.type'
-import { Command } from '@core/commands/command.type'
-import { SensorReadingValue } from './sensor-reading-values'
 import { regexExtract } from './helpers/helpers'
 
-export type CommandCallback = (actuatorName: string, command: Command) => void
+export type CommandCallback = (actuatorName: string, payload: any) => void
 
 @Injectable()
 export class MqttDriver {
@@ -58,13 +56,17 @@ export class MqttDriver {
     //TODO validate incoming commands
     let payload
     try {
-      payload = JSON.parse(message.toString('utf-8'))
+      payload = JSON.parse(message.toString('utf-8').trim())
     } catch (error) {
-      payload = message.toString('utf-8')
+      payload = { action: message.toString('utf-8').trim() }
     }
     const actuatorName = regexExtract(topic, this._actuatorNameExtractor, 'actuatorName')
-    if (!actuatorName) throw new Error('Foutje')
-    // this._log.debug(`received from ${topic} ${JSON.stringify(payload)}`)
+    if (!actuatorName) {
+      this._log.error(
+        `Kon geen actuator naam extracten uit ${topic}, extractor=${JSON.stringify(this._actuatorNameExtractor)}`,
+      )
+      return
+    }
 
     if (this._callback) this._callback(actuatorName, payload)
   }
@@ -74,7 +76,6 @@ export class MqttDriver {
       const mqttTopic = this._outSensorReadingMqttTopicTemplate({ sensorName: topicInfix, prefix: this._topicPrefix })
       const stringified = JSON.stringify(update)
       this._log.debug(`sending update to ${mqttTopic}: ${stringified}`)
-
       this._mqttClient.publish(mqttTopic, stringified)
     }
   }

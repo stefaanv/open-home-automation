@@ -2,7 +2,7 @@ import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { TimedSensorReadingValue } from '@core/sensor-reading-values'
 import { SensorActuatorBase } from './sensor-actuator-base.class'
 
-export class NewSensor<TUID, FTE extends string> extends SensorActuatorBase<TUID, FTE> {
+export class Sensor<TUID, FTE extends string> extends SensorActuatorBase<TUID, FTE> {
   measurementType: MeasurementTypeEnum
 
   constructor(
@@ -16,11 +16,4 @@ export class NewSensor<TUID, FTE extends string> extends SensorActuatorBase<TUID
     this.measurementType = measurementType
     this.state = state
   }
-  /*
-  uit parent class `SensorActuatorBase<TUID>`
-  public readonly id: TUID
-  public readonly topicInfix: string
-  public readonly interfaceSpecificType: FTE
-  public state?: TimedSensorReadingValue
-  */
 }

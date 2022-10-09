@@ -2,16 +2,15 @@ import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
 import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { pick } from 'lodash'
 import WebSocket from 'ws'
 import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
 import {
   PhosconEvent,
   PhosconState,
-  PhosconSensorStateTypeEnum,
   PhosconActuatorDiscoveryItem,
   PhosconSensorDiscoveryItem,
-  PhosconActuatorCommandTypeEnum,
   PhosconLightLevelState,
   PhosconPresenceState,
   PhosconTemperatureState,
@@ -25,14 +24,17 @@ import {
   PhosconSensor,
   PhosconActuator,
   PhosconForeignTypeEnum,
+  PhosconColoredLightCommand,
+  PhosconColoredLightState,
 } from './type'
 import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from '@core/measurement-type.enum'
 import { InterfaceBase } from '@core/channel-service/interface-base.service'
 import { INTERFACE_NAME_TOKEN } from '@core/core.module'
 import { Command } from '@core/commands/command.type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
-import { regexExtract, regexTest } from '@core/helpers/helpers'
+import { regexTest } from '@core/helpers/helpers'
 import {
+  ColoredLight,
   Numeric,
   OnOff,
   OpenClosed,
@@ -41,9 +43,11 @@ import {
   SensorReadingValueWithoutType,
   SwitchPressed,
 } from '@core/sensor-reading-values'
-import { NewSensor } from '@core/sensors-actuators/sensor.class'
-import { NewActuator } from '@core/sensors-actuators/actuator.class'
-import { OnOffCommand } from '@core/commands/on-off.type'
+import { Sensor } from '@core/sensors-actuators/sensor.class'
+import { Actuator } from '@core/sensors-actuators/actuator.class'
+import { OnOffCommand } from '@core/commands/on-off.class'
+import { CommandParser, ValidationResult } from '@core/commands/parser.class'
+import { ColoredLightCommand } from '@core/commands/colored-light.class'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -97,6 +101,11 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
     // store the UID's of sensors to be ignored
     this._sensorIgnoreList = discoveredSensors
       .filter(ds => regexTest(ds.name, this._interfaceConfig.sensorIgnore))
+      .map(ds => {
+        const info = pick(ds, ['name', 'manufacturername', 'modelid', 'state'])
+        this._log.debug(`Ignoring sensor ${JSON.stringify(info)}`)
+        return ds
+      })
       .map(ds => ds.uniqueid as PhosconUID)
 
     // Transform received/discovereds - sensors
@@ -104,19 +113,12 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
       .filter(s => !this._sensorIgnoreList.includes(s.uniqueid as PhosconUID))
       // .filter(ds => ds.uid !== '00:15:8d:00:02:f2:42:b6-01-0006')
       .forEach(ds => {
-        // collect needed info
         const id = ds.uniqueid as PhosconUID
         const typeMapper = SENSOR_TYPE_MAPPERS[ds.type]
-        const matchingFilter = this._interfaceConfig.sensorDiscover.find(f => regexTest(ds.name, f.filter))
-        if (!matchingFilter) {
-          const msg =
-            `this is no matching filter for sensor ${ds.name} and the name does not match the ignore filter` +
-            ` this is probably not what you intended, please update the configuration`
-          this._log.warn(msg)
-          return // ignore this sensor
-        }
-        const topic = regexExtract(ds.name, matchingFilter.filter, 'name') + typeMapper.nameExtension
-        const valueType = (matchingFilter.type ?? typeMapper.measurementType) as MeasurementTypeEnum
+        const discoveryInfo = this.getNameFromConfig(id, ds.name, 'sensor')
+        if (!discoveryInfo) return
+        const topic = discoveryInfo.name + typeMapper.nameExtension
+        const valueType = (discoveryInfo.type ?? typeMapper.measurementType) as MeasurementTypeEnum
 
         const logMessage =
           `Found sensor "${topic}", type=${typeMapper.measurementType}, id=${ds.uniqueid}` +
@@ -124,7 +126,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
         this._log.log(logMessage)
 
         // push new sensor to channel list
-        const sensor = new NewSensor(id, topic, ds.type, valueType)
+        const sensor = new Sensor(id, topic, ds.type, valueType)
         this._sensorChannels.push(sensor)
 
         // send the initial state to the hub
@@ -172,92 +174,47 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
     // Transform received/discovered - actuators
     discoveredActuators
       .filter(s => !this._actuatorIgnoreList.includes(s.uniqueid as PhosconUID))
-      .forEach(ds => {
-        const id = ds.uniqueid as PhosconUID
-        const { nameExtension, measurementType, commandType } = ACTUATOR_TYPE_MAPPERS[ds.type]
-        const matchingFilter = this._interfaceConfig.actuatorDiscover.find(f => regexTest(ds.name, f.filter))
-        if (!matchingFilter) {
-          const msg =
-            `this is no matching filter for actuator ${ds.name} and the name does not match the ignore filter` +
-            ` this is probably not what you intended, please update the configuration`
-          this._log.warn(msg)
-          return // ignore this sensor
-        }
-        const topic = regexExtract(ds.name, matchingFilter.filter, 'name') + nameExtension
+      .forEach(da => {
+        const id = da.uniqueid as PhosconUID
+        const typeMapper = ACTUATOR_TYPE_MAPPERS[da.type]
+        // const { nameExtension, measurementType, commandType } = ACTUATOR_TYPE_MAPPERS[da.type]
+        const discoveryInfo = this.getNameFromConfig(id, da.name, 'actuator')
+        if (!discoveryInfo) return
+        const topic = discoveryInfo.name + typeMapper.nameExtension
 
         const logMessage =
-          `Found actuator "${topic}", type=${commandType}/${measurementType}, id=${ds.uniqueid}` +
-          `, state=${JSON.stringify(ds.state)}`
+          `Found actuator "${topic}", type=${typeMapper.commandType}/${typeMapper.measurementType}, id=${da.uniqueid}` +
+          `, state=${JSON.stringify(da.state)}`
         this._log.log(logMessage)
 
         // push new sensor to channel list
-        const actuator = new NewActuator(id, topic, ds.type, measurementType, commandType)
+        const actuator = new Actuator(id, topic, da.type, typeMapper.measurementType, typeMapper.commandType)
         this._actuatorChannels.push(actuator)
 
         // send the initial state to the hub
-        this.sendSensorStateUpdate(id, ds.state)
+        this.sendSensorStateUpdate(id, da.state)
       })
 
-    /*
-    // configuration pre-processing
-    const actuatorConfigRaw = this._config.get<ChannelConfigRaw<CommandTypeEnum, unknown>>(ACTUATOR_CONFIGURATION)
-    if (!actuatorConfigRaw) this._log.warn(ACTUATOR_CONFIGURATION + EMPTY_ERROR_MSG)
-    const actuatorConfig = new ChannelConfig<CommandTypeEnum, unknown>(actuatorConfigRaw)
-
-    // discover actuators information from phoscon
-    const discoveredActuators = await this._axios.get<PhosconDiscoveryItem[]>('lights')
-
-    // construct `selected` and `to ignore` id lists
-    const allIds = Object.keys(discoveredActuators.data).map(id => parseInt(id))
-    const selectedIds = allIds.filter(id => !regexTest(discoveredActuators.data[id].name, actuatorConfig.ignore))
-
-    // Actuator discovery
-    for await (const id of selectedIds) {
-      // extract actuator ID
-      const discovered = discoveredActuators.data[id]
-
-      // Get mapper info from configuration
-      //TODO nog `instance` mapper implementeren
-      const mapperConfig = actuatorConfig.discover.find(
-        dm => regexTest(discovered.name, dm.filter),
-        //TODO nog branch implementeren voor instance config
-      )
-
-      if (!mapperConfig) {
-        // no mapping found -> configuration needs updating
-        const msg = `NO mapping for actuator "${discovered.name}", type=${discovered.type}, model=${discovered.modelid} (id=${id})`
-        this._log.warn(msg)
-        console.log(JSON.stringify(discovered))
-      } else {
-        // mapping available -> create the actuator
-        const actuatorName = regexExtract(discovered.name, mapperConfig.filter, 'actuatorName')
-
-        //convert zigbee types into AHO command types
-        const typeMap: PhosconActuatorTypeMapper = ACTUATOR_TYPE_MAPPERS[discovered.type]
-        if (!typeMap) {
-          // actuator type not known -> this program needs updating
-          this._log.warn(`Unknown actuator type ${discovered.type}, full payload below`)
-          console.log(discovered)
-        } else {
-          const { commandType, transformer } = typeMap
-          const channel = new PhosconActuatorChannel(id, actuatorName, commandType, transformer)
-
-          this._actuatorChannels.add(channel)
-          this._log.log(`New actuator defined "${actuatorName}", type=${commandType} (id=${id})`)
-        }
-      }
-    }
     const commandTemplate = Handlebars.compile(this._config.get<string>('mqtt.commandTemplate'))
     const prefix = this._config.get<string>('mqtt.topicPrefix')
-    const mqttTopics = this._actuatorChannels.all.map<string>(a => commandTemplate({ prefix, actuatorName: a.name }))
+    const mqttTopics = this._actuatorChannels.map<string>(a => commandTemplate({ prefix, actuatorName: a.topic }))
     this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
-*/
   }
 
-  private mqttCallback(actuatorName: string, cmd: Command) {
+  private async mqttCallback(actuatorName: string, payload: any) {
     //TODO handle messages received from MQTT
-    // const [channel, command] = this._actuatorChannels.toForeign(actuatorName, cmd)
-    // this._axios.put(`lights/${channel.uid}/state`, command)
+    const channel = this._actuatorChannels.find(a => a.topic === actuatorName)
+    if (!channel) {
+      this._log.warn(`Unknown channel for '${actuatorName}', payload = ${JSON.stringify(payload)}`)
+      return
+    }
+    const result = await CommandParser.parse(channel.commandType, payload)
+    if (result instanceof ValidationResult) {
+      result.errorMessages.forEach(e => this._log.warn(e))
+      return
+    }
+    const transformedCommand = this.transformActuatorCommand(channel, result)
+    this._axios.put(`lights/${channel.id}/state`, transformedCommand)
   }
 
   // Phoscon SSE link event handler
@@ -319,47 +276,71 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
     return { type: type as NumericMeasurementTypeEnum, unit, value, formattedValue: formatter(value, unit) }
   }
 
-  private transformSensorState(sensor: PhosconSensor, state: PhosconState): SensorReadingValue | undefined {
+  private transformSensorState(sensor: PhosconSensor, originalState: PhosconState): SensorReadingValue | undefined {
     switch (sensor.foreignType) {
-      case 'ZHALightLevel':
+      case 'ZHALightLevel': {
+        const state = originalState as PhosconLightLevelState
         return this.numericStateFactory(
           (state as PhosconLightLevelState).lux,
           'lux',
           'illuminance',
           (value, unit) => `${value.toFixed(0)} ${unit}`,
         )
-      case 'ZHAPresence':
-        const presenceState = state as PhosconPresenceState
-        return (presenceState.presence ?? presenceState.on ? 'present' : 'absent') as Presence
-      case 'ZHATemperature':
+      }
+      case 'ZHAPresence': {
+        const state = originalState as PhosconPresenceState
+        return (state.presence ?? state.on ? 'present' : 'absent') as Presence
+      }
+      case 'ZHATemperature': {
+        const state = originalState as PhosconTemperatureState
         return this.numericStateFactory(
-          (state as PhosconTemperatureState).temperature / 100,
+          state.temperature / 100,
           '°C',
           'temperature',
           (value, unit) => `${value.toFixed(1)}${unit}`,
         )
-      case 'ZHAHumidity':
+      }
+      case 'ZHAHumidity': {
+        const state = originalState as PhosconHumidityState
         return this.numericStateFactory(
-          (state as PhosconHumidityState).humidity / 100,
+          state.humidity / 100,
           '%rh',
           'humidity',
           (value, unit) => `${value.toFixed(0)}${unit}`,
         )
-      case 'ZHAOpenClose':
-        return (
-          (state as PhosconOpenClosedState).open ?? (state as PhosconOpenClosedState).on ? 'open' : 'closed'
-        ) as OpenClosed
+      }
+      case 'ZHAOpenClose': {
+        const state = originalState as PhosconOpenClosedState
+        return (state.open ?? state.on ? 'open' : 'closed') as OpenClosed
+      }
       case 'ZHASwitch':
-        return { state: (state as PhosconSwitchState).buttonevent === 1002 ? 'shortpress' : undefined } as SwitchPressed
-      case 'On/Off plug-in unit':
-        return ((state as PhosconOnOffState).on ? 'on' : 'off') as OnOff
-      case 'ZHAAirQuality':
+        const state = originalState as PhosconSwitchState
+        return {
+          state: state.buttonevent === 1002 ? 'shortpress' : undefined,
+        } as SwitchPressed
+      case 'On/Off plug-in unit': {
+        const state = originalState as PhosconOnOffState
+        return (state.on ? 'on' : 'off') as OnOff
+      }
+      case 'Color temperature light': {
+        const state = originalState as PhosconColoredLightState
+        return {
+          brightness: state.bri,
+          colorTemperature: state.ct,
+          on: state.on,
+          reachable: state.reachable,
+          alert: state.alert,
+        } as ColoredLight
+      }
+      case 'ZHAAirQuality': {
+        const state = originalState as PhosconTemperatureState
         return this.numericStateFactory(
-          (state as PhosconTemperatureState).temperature / 100,
+          state.temperature / 100,
           '°C',
           'temperature',
           (value, unit) => `${value.toFixed(1)}${unit}`,
         )
+      }
       default:
         return undefined
     }
@@ -368,9 +349,15 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
   private transformActuatorCommand(actuator: PhosconActuator, cmd: Command): PhosconCommand {
     switch (actuator.commandType) {
       case 'relay':
-        const request: boolean = (cmd as OnOffCommand).switchTo === 'on'
-        return { on: request } as PhosconOnOffCommand
+        const onOffCmd: boolean = (cmd as OnOffCommand).action === 'on'
+        return { on: onOffCmd } as PhosconOnOffCommand
       case 'colored-light':
+        const lightCmd = cmd as ColoredLightCommand
+        return {
+          on: lightCmd.on,
+          bri: lightCmd.brightness,
+          ct: lightCmd.colorTemperature,
+        } as PhosconColoredLightCommand
       case 'roller-shutter':
         throw new Error('Function not implemented.')
       default:

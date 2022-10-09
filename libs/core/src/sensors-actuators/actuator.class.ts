@@ -1,9 +1,9 @@
 import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { TimedSensorReadingValue } from '@core/sensor-reading-values'
-import { NewSensor } from './sensor.class'
+import { Sensor } from './sensor.class'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 
-export class NewActuator<TUID, FTE extends string> extends NewSensor<TUID, FTE> {
+export class Actuator<TUID, FTE extends string> extends Sensor<TUID, FTE> {
   public readonly commandType: ActuatorTypeEnum
 
   constructor(

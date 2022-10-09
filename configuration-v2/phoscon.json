@@ -19,11 +19,15 @@
     }]
   },
   "actuators": {
-    "ignore": "(Range|Configuration|On\\/Off|Eethoek)[\\w\\s]*",
+    "ignore": "(Range|Configuration|On\\/Off)[\\w\\s]*",
     "discover": [
       {
         "filter": "(?<name>[\\w:]+)_plug",
-        "actuatorType": "on-off"
+        "actuatorType": "relay"
+      },
+      {
+        "filter": "(?<name>[\\w:]+)_clgt",
+        "actuatorType": "colored-light"
       }
     ]
   }
