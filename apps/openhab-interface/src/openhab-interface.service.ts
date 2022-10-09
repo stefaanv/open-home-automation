@@ -1,11 +1,18 @@
+import { InterfaceBase } from '@core/channel-service/interface-base.service'
+import { INTERFACE_NAME_TOKEN } from '@core/core.module'
 import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
-import { SensorReading } from '@core/sensor-reading.type'
-import { Injectable } from '@nestjs/common'
+import axios, { Axios } from 'axios'
+import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import EventSource from 'eventsource'
-import { OnOff } from '@core/measurement-types/on-off.type'
-import { SensorMapperConfig } from '@core/configuration/sensor-mapper-config'
+import { OpenHAB_SensorDiscoveryItem, OpenHAB_SensorForeignTypeEnum } from './types'
+import { regexTest } from '@core/helpers/helpers'
+import { pick } from 'lodash'
+import { MeasurementTypeEnum } from '@core/measurement-type.enum'
+import { UID } from '@core/sensors-actuators/uid.type'
+import { Sensor } from '@core/sensors-actuators/sensor.class'
+import { SENSOR_TYPE_MAPPERS } from './constants'
 
 type OpenHabEvent = {
   topic: string
@@ -20,23 +27,141 @@ type OpenHabPayload = {
   oldValue: string
 }
 
-function regexTest(s: string, r: RegExp) {
-  return r.test(s)
-}
+type OpenHAB_ForeignTypeEnum = 'unknown'
 
-function regexExtract(s: string, r: RegExp, groupName: string): string | undefined {
-  const groups = r.exec(s).groups
-  if (!groups) return undefined
-  return groups[groupName]
-}
-
-const GENERAL_TOPIC_KEY = 'openhab.fromInterface.interfaceSpecific.generalTopicFilter'
-const EVENT_URL_KEY = 'openhab.fromInterface.interfaceSpecific.eventUrl'
-const MEASUREMENT_MAPPER_KEY = 'openhab.fromInterface.sensorMappers'
+const EVENT_URL_KEY = 'openhab.general.eventUrl'
+const BASE_URL_KEY = 'openhab.general.baseUrl'
 const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
-
 @Injectable()
-export class OpenhabInterfaceService {
+export class OpenhabInterfaceService extends InterfaceBase<OpenHAB_SensorForeignTypeEnum> {
+  private readonly _eventSource!: EventSource
+  private readonly _axios!: Axios
+
+  constructor(
+    @Inject(INTERFACE_NAME_TOKEN) interfaceName: string,
+    log: LoggingService,
+    mqttDriver: MqttDriver,
+    config: ConfigService,
+  ) {
+    super(interfaceName, log, config, mqttDriver)
+    // set log context
+    this._log.setContext(OpenhabInterfaceService.name)
+
+    const eventUrl = this._config.get<string>(EVENT_URL_KEY, '')
+    if (!eventUrl) {
+      this._log.warn(EVENT_URL_KEY + EMPTY_ERROR_MSG)
+      return
+    }
+
+    const apiBaseUrl = this._config.get<string>(BASE_URL_KEY, '')
+    if (!apiBaseUrl) {
+      this._log.warn(BASE_URL_KEY + EMPTY_ERROR_MSG)
+      return
+    }
+    this._axios = axios.create({ baseURL: apiBaseUrl, responseType: 'json' })
+
+    // Start sensor and actuator configuration
+    this.configure()
+
+    // Setting up de SSE link to Openhab
+    const es = new EventSource(eventUrl)
+    es.onmessage = (evt: MessageEvent<any>) => this.sseEventHandler(evt)
+    es.onerror = error => this._log.error(JSON.stringify(error))
+  }
+
+  private async configure() {
+    // const discoveredActuators = await this._axios.get<Record<number, PhosconActuatorDiscoveryItem>>('lights')
+
+    await this.configureSensors()
+    // await this.configureActuators()
+  }
+
+  private sseEventHandler(evt: MessageEvent<any>) {
+    console.log(JSON.stringify(evt))
+  }
+
+  private logIgnoreSensor(sensor: OpenHAB_SensorDiscoveryItem) {
+    const info = pick(sensor, ['name', 'manufacturername', 'modelid', 'state'])
+    this._log.debug(`Ignoring sensor ${JSON.stringify(info)}`)
+  }
+
+  private async configureSensors() {
+    // Get sensor info from the Phoscon API
+    const discoveredSensors = await this._axios.get<OpenHAB_SensorDiscoveryItem[]>('items')
+
+    // store the UID's of sensors to be ignored
+    this._sensorIgnoreList = discoveredSensors.data
+      .filter(ds => regexTest(ds.name, this._interfaceConfig.sensorIgnore))
+      .map(ds => {
+        this.logIgnoreSensor(ds)
+        return ds
+      })
+      .map(ds => ds.name as UID)
+    // Transform received/discovereds - sensors
+    discoveredSensors.data
+      .filter(s => !this._sensorIgnoreList.includes(s.name as UID))
+      .forEach(ds => {
+        const id = ds.name as UID
+        const typeMapper = SENSOR_TYPE_MAPPERS[ds.type]
+        if (!typeMapper.measurementType) {
+          this._sensorIgnoreList.push(id)
+          return
+        }
+        const discoveryInfo = this.getNameFromConfig(id, ds.name, 'sensor')
+        if (!discoveryInfo) {
+          this.logIgnoreSensor(ds)
+          return
+        }
+        const topic = ds.name
+        const valueType = (discoveryInfo.type ?? typeMapper.measurementType) as MeasurementTypeEnum
+
+        const logMessage =
+          `Found sensor "${topic}", type=${typeMapper.measurementType}, id=${ds.name}` +
+          `, state=${JSON.stringify(ds.state)}`
+        this._log.log(logMessage)
+
+        // push new sensor to channel list
+        const sensor = new Sensor(id, topic, ds.type, valueType)
+        this._sensorChannels.push(sensor)
+        debugger
+
+        // send the initial state to the hub
+        // this.sendSensorStateUpdate(id, ds.state)
+      })
+    /*
+
+    // Transform defined sensors
+    this._interfaceConfig.sensorDefinition
+      // Ignore discovered channels with the same unique ID
+      .filter(s => {
+        const eqCh = this._sensorChannels.find(ch => ch.id === s.id)
+        if (eqCh) {
+          if (eqCh.topic === s.topicInfix && eqCh.measurementType === s.valuetype)
+            this._log.warn(`Channel with equal UID ${s.id} like ${s.topicInfix} already discovered`)
+          else
+            this._log.error(
+              `Channel with equal UID ${s.id} like ${s.topicInfix}) already discovered ` +
+                `- ignoring the definition, discovery takes precedence`,
+            )
+        }
+        return true
+      })
+
+    // Start the sensors readout through Pposcon API WebSocket
+    const eventUrl = this._config.get<string>(EVENT_URL, '')
+    if (!eventUrl) {
+      this._log.error(EVENT_URL + EMPTY_ERROR_MSG)
+      return
+    }
+    this._log.log(`configuration done, starting the listener`)
+    const ws = new WebSocket(eventUrl)
+    ws.onmessage = (event: WebSocket.MessageEvent) => this.wsEventHandler(event)
+  */
+  }
+}
+
+/*
+export class OldOpenhabInterfaceService {
   private readonly _generalTopicFilter: RegExp
   private readonly _sensorMappers: SensorMapperConfig[]
   private readonly _oldStates: Record<string, SensorReading<any>>
@@ -71,13 +196,6 @@ export class OpenhabInterfaceService {
     es.onmessage = (evt: MessageEvent<any>) => this.sseEventHandler(evt)
     es.onerror = error => this._log.error(JSON.stringify(error))
 
-    /*
-    this._mqttDriver.subscribe(
-      (tUpd: SensorReading) => this.mqttCallback(tUpd),
-      [
-      ],
-    )
-    */
   }
 
   // Openhab SSE link event handler
@@ -136,3 +254,4 @@ export class OpenhabInterfaceService {
     //TODO handle messages received from MQTT
   }
 }
+*/

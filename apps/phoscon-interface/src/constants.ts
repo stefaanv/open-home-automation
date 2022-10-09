@@ -1,9 +1,6 @@
-import { ActuatorTypeMapper } from '@core/channel-service/types'
 import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
-import { Command } from '@core/commands/command.type'
-import { OnOffCommand } from '@core/commands/on-off.class'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { PhosconSensorStateTypeEnum, PhosconActuatorCommandTypeEnum, PhosconOnOffCommand } from './type'
+import { PhosconSensorStateTypeEnum, PhosconActuatorCommandTypeEnum, PhosconOnOffCommand } from './types'
 
 export const SENSOR_TYPE_MAPPERS: Record<
   PhosconSensorStateTypeEnum,
@@ -11,31 +8,31 @@ export const SENSOR_TYPE_MAPPERS: Record<
 > = {
   ZHALightLevel: {
     nameExtension: '_lumi',
-    measurementType: 'illuminance' as MeasurementTypeEnum,
+    measurementType: 'illuminance',
   },
   ZHAPresence: {
     nameExtension: '_pres',
-    measurementType: 'presence' as MeasurementTypeEnum,
+    measurementType: 'presence',
   },
   ZHATemperature: {
     nameExtension: '_temp',
-    measurementType: 'temperature' as MeasurementTypeEnum,
+    measurementType: 'temperature',
   },
   ZHAHumidity: {
     nameExtension: '_humi',
-    measurementType: 'humidity' as MeasurementTypeEnum,
+    measurementType: 'humidity',
   },
   ZHAOpenClose: {
     nameExtension: '_cnct',
-    measurementType: 'contact' as MeasurementTypeEnum,
+    measurementType: 'contact',
   },
   ZHASwitch: {
     nameExtension: '_sw',
-    measurementType: 'switch' as MeasurementTypeEnum,
+    measurementType: 'switch',
   },
   ZHAAirQuality: {
     nameExtension: '_airq',
-    measurementType: 'air-quality' as MeasurementTypeEnum,
+    measurementType: 'air-quality',
   },
 }
 

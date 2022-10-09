@@ -8,7 +8,6 @@ import {
   INTERFACE_NAME_TOKEN,
   SENSOR_TYPE_MAPPERS_TOKEN,
 } from '@core/core.module'
-import { InterfaceBase } from '@core/channel-service/interface-base.service'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
 
 const INTERFACE_NAME = 'phoscon'
@@ -20,11 +19,6 @@ const INTERFACE_NAME = 'phoscon'
       load: [configuration],
     }),
   ],
-  providers: [
-    PhosconInterfaceService,
-    { provide: INTERFACE_NAME_TOKEN, useValue: INTERFACE_NAME },
-    { provide: SENSOR_TYPE_MAPPERS_TOKEN, useValue: SENSOR_TYPE_MAPPERS },
-    { provide: ACTUATOR_TYPE_MAPPERS_TOKEN, useValue: ACTUATOR_TYPE_MAPPERS },
-  ],
+  providers: [PhosconInterfaceService, { provide: INTERFACE_NAME_TOKEN, useValue: INTERFACE_NAME }],
 })
 export class PhosconInterfaceModule {}

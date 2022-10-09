@@ -18,7 +18,6 @@ import {
   PhosconOpenClosedState,
   PhosconSwitchState,
   PhosconOnOffState,
-  PhosconUID,
   PhosconCommand,
   PhosconOnOffCommand,
   PhosconSensor,
@@ -26,7 +25,7 @@ import {
   PhosconForeignTypeEnum,
   PhosconColoredLightCommand,
   PhosconColoredLightState,
-} from './type'
+} from './types'
 import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from '@core/measurement-type.enum'
 import { InterfaceBase } from '@core/channel-service/interface-base.service'
 import { INTERFACE_NAME_TOKEN } from '@core/core.module'
@@ -48,6 +47,7 @@ import { Actuator } from '@core/sensors-actuators/actuator.class'
 import { OnOffCommand } from '@core/commands/on-off.class'
 import { CommandParser, ValidationResult } from '@core/commands/parser.class'
 import { ColoredLightCommand } from '@core/commands/colored-light.class'
+import { UID } from '@core/sensors-actuators/uid.type'
 
 const APIKEY_KEY = 'phoscon.general.apiKey'
 const API_BASE_KEY = 'phoscon.general.baseUrl'
@@ -57,17 +57,15 @@ const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 //TODO inkomende (mqtt) commando's valideren + foutmelding indien niet OK
 
 @Injectable()
-export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconForeignTypeEnum> {
+export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnum> {
   private readonly _apiKey: string
-  private readonly _axios: Axios
+  private readonly _axios!: Axios
 
   constructor(
     @Inject(INTERFACE_NAME_TOKEN) interfaceName: string,
     log: LoggingService,
     mqttDriver: MqttDriver,
     config: ConfigService,
-    // @Inject(ACTUATOR_TYPE_MAPPERS_TOKEN)
-    // private readonly _actuatorTypeMappers: Record<CommandTypeEnum, ActuatorTypeMapper<TFC>>,
   ) {
     super(interfaceName, log, config, mqttDriver)
     // set log context
@@ -75,20 +73,23 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
 
     // retrieve API key and BASE URL from config
     this._apiKey = this._config.get<string>(APIKEY_KEY, '')
-    if (!this._apiKey) this._log.warn(APIKEY_KEY + EMPTY_ERROR_MSG)
+    if (!this._apiKey) {
+      this._log.warn(APIKEY_KEY + EMPTY_ERROR_MSG)
+      return
+    }
     const apiBaseUrlTemplate = Handlebars.compile(this._config.get<string>(API_BASE_KEY, ''))
     const apiBaseUrl = apiBaseUrlTemplate({ apiKey: this._apiKey })
-    if (!this._apiKey) this._log.warn(API_BASE_KEY + EMPTY_ERROR_MSG)
+    if (!apiBaseUrl) {
+      this._log.warn(API_BASE_KEY + EMPTY_ERROR_MSG)
+      return
+    }
     this._axios = axios.create({ baseURL: apiBaseUrl, responseType: 'json' })
 
-    // Start sensor and actuator discovery
+    // Start sensor and actuator configuration
     this.configure()
   }
 
   private async configure() {
-    const discoveredSensors = await this._axios.get<Record<number, PhosconSensorDiscoveryItem>>('sensors')
-    const discoveredActuators = await this._axios.get<Record<number, PhosconActuatorDiscoveryItem>>('lights')
-
     await this.configureSensors()
     await this.configureActuators()
   }
@@ -106,14 +107,14 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
         this._log.debug(`Ignoring sensor ${JSON.stringify(info)}`)
         return ds
       })
-      .map(ds => ds.uniqueid as PhosconUID)
+      .map(ds => ds.uniqueid as UID)
 
     // Transform received/discovereds - sensors
     discoveredSensors
-      .filter(s => !this._sensorIgnoreList.includes(s.uniqueid as PhosconUID))
+      .filter(s => !this._sensorIgnoreList.includes(s.uniqueid as UID))
       // .filter(ds => ds.uid !== '00:15:8d:00:02:f2:42:b6-01-0006')
       .forEach(ds => {
-        const id = ds.uniqueid as PhosconUID
+        const id = ds.uniqueid as UID
         const typeMapper = SENSOR_TYPE_MAPPERS[ds.type]
         const discoveryInfo = this.getNameFromConfig(id, ds.name, 'sensor')
         if (!discoveryInfo) return
@@ -169,13 +170,13 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
     // store the UID's of actuators to be ignored
     this._actuatorIgnoreList = discoveredActuators
       .filter(ds => regexTest(ds.name, this._interfaceConfig.actuatorIgnore))
-      .map(ds => ds.uniqueid as PhosconUID)
+      .map(ds => ds.uniqueid as UID)
 
     // Transform received/discovered - actuators
     discoveredActuators
-      .filter(s => !this._actuatorIgnoreList.includes(s.uniqueid as PhosconUID))
+      .filter(s => !this._actuatorIgnoreList.includes(s.uniqueid as UID))
       .forEach(da => {
-        const id = da.uniqueid as PhosconUID
+        const id = da.uniqueid as UID
         const typeMapper = ACTUATOR_TYPE_MAPPERS[da.type]
         // const { nameExtension, measurementType, commandType } = ACTUATOR_TYPE_MAPPERS[da.type]
         const discoveryInfo = this.getNameFromConfig(id, da.name, 'actuator')
@@ -222,12 +223,12 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
     const payload: PhosconEvent = JSON.parse(event.data.toString())
     //{"e":"changed","id":"4","r":"sensors","state":{"buttonevent":1002,"lastupdated":"2022-09-13T16:16:55.915"},"t":"event","uniqueid":"00:12:4b:00:22:42:41:25-01-0006"}
     const state = payload.state
-    const id = payload.uniqueid as PhosconUID
+    const id = payload.uniqueid as UID
     if (!state || payload?.r === 'groups' /*|| this._sensorIgnoreList.includes(payload.uniqueid)*/) {
       // event must be ignored in these cases
       return
     }
-    if (this._sensorIgnoreList.includes(payload.uniqueid as PhosconUID)) {
+    if (this._sensorIgnoreList.includes(payload.uniqueid as UID)) {
       this._log.debug(`on ignorelist: ${id}, state = ${JSON.stringify(state)}`)
       return
     }
@@ -235,7 +236,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconUID, PhosconFo
     this.sendSensorStateUpdate(id, state)
   }
 
-  private sendSensorStateUpdate(id: PhosconUID, state: PhosconState) {
+  private sendSensorStateUpdate(id: UID, state: PhosconState) {
     const channel = this.getSensorChannel(id)
     if (!channel) {
       this._log.error(`channel ${id} not found - unable to send update`)

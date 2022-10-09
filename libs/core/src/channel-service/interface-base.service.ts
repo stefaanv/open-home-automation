@@ -6,6 +6,7 @@ import { DiscoveryConfigRegex, InterfaceConfig } from './discovery-config.class'
 import { Sensor } from '@core/sensors-actuators/sensor.class'
 import { Actuator } from '@core/sensors-actuators/actuator.class'
 import { regexExtract, regexTest } from '@core/helpers/helpers'
+import { UID } from '@core/sensors-actuators/uid.type'
 
 /**
  * Verantwoordelijkheden
@@ -21,11 +22,11 @@ import { regexExtract, regexTest } from '@core/helpers/helpers'
    - type: sensor type (eg ZHASwitch)
 */
 @Injectable()
-export class InterfaceBase<TUID, FTE extends string> {
-  protected _sensorIgnoreList: TUID[] = []
-  protected _sensorChannels: Sensor<TUID, FTE>[] = []
-  protected _actuatorIgnoreList: TUID[] = []
-  protected _actuatorChannels: Actuator<TUID, FTE>[] = []
+export class InterfaceBase<FTE extends string> {
+  protected _sensorIgnoreList: UID[] = []
+  protected _sensorChannels: Sensor<FTE>[] = []
+  protected _actuatorIgnoreList: UID[] = []
+  protected _actuatorChannels: Actuator<FTE>[] = []
   protected readonly _interfaceConfig: InterfaceConfig<FTE>
 
   constructor(
@@ -37,7 +38,7 @@ export class InterfaceBase<TUID, FTE extends string> {
     this._interfaceConfig = new InterfaceConfig(this._config, _interfaceName)
   }
 
-  getNameFromConfig(id: TUID, name: string, type: 'sensor' | 'actuator') {
+  getNameFromConfig(id: UID, name: string, type: 'sensor' | 'actuator') {
     const discoverConfig: DiscoveryConfigRegex[] =
       this._interfaceConfig[type === 'sensor' ? 'sensorDiscover' : 'actuatorDiscover']
     const matchingFilter = discoverConfig.find(f => regexTest(name, f.filter))
@@ -51,7 +52,7 @@ export class InterfaceBase<TUID, FTE extends string> {
     return { name: regexExtract(name, matchingFilter.filter, 'name'), type: matchingFilter.type }
   }
 
-  protected getSensorChannel(id: TUID): Sensor<TUID, FTE> | undefined {
+  protected getSensorChannel(id: UID): Sensor<FTE> | undefined {
     const sensorChannel = this._sensorChannels.find(sc => sc.id === id)
     if (sensorChannel) return sensorChannel
     const actuatorChannel = this._actuatorChannels.find(sc => sc.id === id)

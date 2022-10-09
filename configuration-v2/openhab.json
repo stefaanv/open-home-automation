@@ -1,0 +1,26 @@
+{
+  "general": {
+    "eventUrl": "http://192.168.0.10:8080/rest/events",
+    "baseUrl": "http://192.168.0.10:8080/rest",
+    "generalTopicFilter": "openhab\\/items\\/(?<topic>[\\w:]+)\\/statechanged"
+  },
+  "sensors": {
+    "ignore": "(^rl_)|(_group$)",
+    "discover": [
+      {
+        "filter": "(?<topic>[\\w:]+(_temp|_temp_rfx))",
+        "type": "temperature"
+      },
+      {
+        "filter": "(?<topic>[\\w:]+_vocht)",
+        "type": "humidity"
+      },
+      {
+        "filter": "vlg_(?<topic>[\\w:]+)",
+        "type": "on-off"
+      }
+    ],
+    "define": []
+  },
+  "actuators": {}
+}

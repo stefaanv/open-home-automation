@@ -5,10 +5,8 @@ import { SensorReadingValue } from '@core/sensor-reading-values'
 import { Actuator } from '@core/sensors-actuators/actuator.class'
 import { Sensor } from '@core/sensors-actuators/sensor.class'
 
-// TUID
-export type PhosconUID = string & { type: 'phoscon-uid' }
-export type PhosconSensor = Sensor<PhosconUID, PhosconForeignTypeEnum>
-export type PhosconActuator = Actuator<PhosconUID, PhosconForeignTypeEnum>
+export type PhosconSensor = Sensor<PhosconForeignTypeEnum>
+export type PhosconActuator = Actuator<PhosconForeignTypeEnum>
 
 export const PhosconSensorTypeEnumNames = [
   'ZHAPresence',

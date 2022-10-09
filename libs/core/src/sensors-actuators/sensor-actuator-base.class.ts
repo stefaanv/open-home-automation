@@ -1,12 +1,13 @@
 import { TimedSensorReadingValue } from '@core/sensor-reading-values'
+import { UID } from './uid.type'
 
-export class SensorActuatorBase<TUID, FTE extends string> {
-  public readonly id: TUID
+export class SensorActuatorBase<FTE extends string> {
+  public readonly id: UID
   public readonly topic: string
   public readonly foreignType: FTE
   public state?: TimedSensorReadingValue
 
-  constructor(id: TUID, topic: string, foreignType: FTE) {
+  constructor(id: UID, topic: string, foreignType: FTE) {
     this.id = id
     this.topic = topic
     this.foreignType = foreignType
