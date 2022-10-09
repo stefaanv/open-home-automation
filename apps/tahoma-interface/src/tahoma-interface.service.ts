@@ -14,14 +14,7 @@ import {
   SENSOR_TYPE_MAPPERS,
   tahomaRollerShutterCommandCreator,
 } from './constants'
-import {
-  TahomaDevice,
-  TahomaEvent,
-  TahomaSensorChannel,
-  TahomaSensorChannelList,
-  TahomaActuatorChannelList,
-  TahomaSensorTypeMapper,
-} from './types'
+import { TahomaDevice, TahomaEvent, TahomaSensorTypeMapper } from './types'
 import { SensorChannel } from '@core/channels/sensor-channel.class'
 import { ActuatorChannel } from '@core/channels/actuator-channel.class'
 
