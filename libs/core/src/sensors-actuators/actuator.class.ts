@@ -5,17 +5,17 @@ import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { UID } from './uid.type'
 
 export class Actuator<FTE extends string> extends Sensor<FTE> {
-  public readonly commandType: ActuatorTypeEnum
+  public readonly actuatorType: ActuatorTypeEnum
 
   constructor(
     id: UID,
     topic: string,
     foreignType: FTE,
     measurementType: MeasurementTypeEnum,
-    commandType: ActuatorTypeEnum,
+    actuatorType: ActuatorTypeEnum,
     state?: TimedSensorReadingValue,
   ) {
     super(id, topic, foreignType, measurementType, state)
-    this.commandType = commandType
+    this.actuatorType = actuatorType
   }
 }

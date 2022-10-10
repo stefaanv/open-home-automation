@@ -6,6 +6,18 @@
   },
   "sensors": {
     "ignore": "(Range|Configuration|unknown|Daylight|Eethoek|On\\/Off|Presence|LightLevel|Temperature|ronde)[\\w\\s]*",
+    "typeIndicatorList": {
+      "ZHALightLevel": "lumi",
+      "ZHAPresence": "pres",
+      "ZHATemperature": "temp",
+      "ZHAHumidity": "humi",
+      "ZHAOpenClose": "cnct",
+      "ZHASwitch": "sw",
+      "ZHAAirQuality": "airq",
+      "Color temperature light": "clgt",
+      "On/Off plug-in unit": "relay",
+      "Range extender": "range-ext"
+    },
     "discover": [
       {
         "filter": "(?<name>[\\w:]+)_(multi|lumi|cnct|plug|switch)",
@@ -23,6 +35,10 @@
   },
   "actuators": {
     "ignore": "(Range|Configuration|On\\/Off)[\\w\\s]*",
+    "typeIndicatorList": {
+      "Color temperature light": "clgt",
+      "On/Off plug-in unit": "relay"
+    },
     "discover": [
       {
         "filter": "(?<name>[\\w:]+)_plug",

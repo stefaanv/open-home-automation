@@ -25,9 +25,8 @@ export const PhosconActuatorTypeEnumNames = [
   'Color temperature light',
 ] as const
 
-export type PhosconActuatorCommandTypeEnum = typeof PhosconActuatorTypeEnumNames[number]
-
-export type PhosconForeignTypeEnum = PhosconSensorStateTypeEnum | PhosconActuatorCommandTypeEnum
+export type PhosconActuatorTypeEnum = typeof PhosconActuatorTypeEnumNames[number]
+export type PhosconForeignTypeEnum = PhosconSensorStateTypeEnum | PhosconActuatorTypeEnum
 
 export const PhosconActuatorModelIds = ['RaspBee II', 'SP 220', 'ConBee II', 'TS0207', 'CCT Light']
 
@@ -61,7 +60,7 @@ export type PhosconSensorDiscoveryItem = PhosconDiscoveryItemBase & {
 }
 
 export type PhosconActuatorDiscoveryItem = PhosconDiscoveryItemBase & {
-  type: PhosconActuatorCommandTypeEnum
+  type: PhosconActuatorTypeEnum
   hascolor: boolean
   manufacturer: string
   pointsymbol: any

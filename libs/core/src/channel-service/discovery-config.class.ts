@@ -4,7 +4,8 @@ import { ConfigService } from '@nestjs/config'
 import { compile } from 'handlebars'
 import { IsNotEmpty, IsString, validate } from 'class-validator'
 import { LoggingService } from '@core/logging.service'
-import { regexExtract, regexTest } from '@core/helpers/helpers'
+import { regexTest } from '@core/helpers/helpers'
+import { SensorTypeMapper } from './types'
 
 export class DiscoveryConfigString {
   @IsNotEmpty()
@@ -53,6 +54,7 @@ async function validateOrLog(discoveryConfigElement: DiscoveryConfigString, logg
 }
 
 export class InterfaceConfig<FTE extends string> {
+  readonly typeIndicatorList: SensorTypeMapper<FTE> | undefined
   readonly sensorIgnore: RegExp
   readonly sensorDiscover: DiscoveryConfigRegex[]
   readonly sensorDefinition: SensorDefinitionConfig<FTE>[]
@@ -61,6 +63,9 @@ export class InterfaceConfig<FTE extends string> {
   readonly actuatorDefinition: ActuatorDefinitionConfig<FTE>[]
 
   constructor(config: ConfigService, interfaceName: string, private readonly _log: LoggingService) {
+    this.typeIndicatorList = config.get<Record<FTE, MeasurementTypeEnum>>(
+      [interfaceName, 'sensors', 'typeIndicatorList'].join('.'),
+    )
     this.sensorIgnore = new RegExp(config.get<string>([interfaceName, 'sensors', 'ignore'].join('.'), ''))
     this.sensorDiscover = config
       .get<DiscoveryConfigString[]>([interfaceName, 'sensors', 'discover'].join('.'), [])

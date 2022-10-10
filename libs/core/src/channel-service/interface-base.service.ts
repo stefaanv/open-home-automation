@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
-import { DiscoveryConfigRegex, InterfaceConfig } from './discovery-config.class'
+import { InterfaceConfig } from './discovery-config.class'
 import { Sensor } from '@core/sensors-actuators/sensor.class'
 import { Actuator } from '@core/sensors-actuators/actuator.class'
-import { regexExtract, regexTest } from '@core/helpers/helpers'
+import { regexTest } from '@core/helpers/helpers'
 import { UID } from '@core/sensors-actuators/uid.type'
-import { pick } from 'lodash'
-import { SensorTypeMapper } from '@core/channel-service/types'
+import { ActuatorTypeMapper, SensorTypeMapper } from '@core/channel-service/types'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
+import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 
 export type DiscoverableSensor<FTE extends string> = {
   name: string
@@ -17,6 +17,15 @@ export type DiscoverableSensor<FTE extends string> = {
   foreignType: FTE
   sensorIgnoreLogInfo: string
   state: any
+  lastupdated: Date | undefined
+}
+
+export type DiscoverableActuator<FATE extends string> = {
+  name: string
+  id: UID
+  foreignType: FATE
+  actuatorType: ActuatorTypeEnum
+  actuatorIgnoreLogInfo: string
 }
 
 /**
@@ -26,6 +35,7 @@ export type DiscoverableSensor<FTE extends string> = {
  * Generic types
  * - TFVS : Foreign Value State - vorm van de sensor status die van de externe interface kant komt
  * - FTE : Foreign SENSOR-reading AND ACTUATOR-command Type Enum = litteral string type van de mogelijke externe inkomende sensor en actuator types
+ * - FATE : Foreign ACTUATOR-command Type Enum = litteral string type van de mogelijke externe en actuator types
  */
 /* Information needed from sensor discovery :
    - uid: key
@@ -33,7 +43,7 @@ export type DiscoverableSensor<FTE extends string> = {
    - type: sensor type (eg ZHASwitch)
 */
 @Injectable()
-export abstract class InterfaceBase<FTE extends string> {
+export abstract class InterfaceBase<FTE extends string, FATE extends string> {
   protected _sensorIgnoreList: UID[] = []
   protected _sensorChannels: Sensor<FTE>[] = []
   protected _actuatorIgnoreList: UID[] = []
@@ -50,6 +60,7 @@ export abstract class InterfaceBase<FTE extends string> {
   }
 
   public discoverSensors(sensorList: DiscoverableSensor<FTE>[], typeMapper: SensorTypeMapper<FTE>) {
+    const typeIndicators = this._interfaceConfig.typeIndicatorList
     // store the UID's of sensors to be ignored
     this._sensorIgnoreList = sensorList
       .filter(s => regexTest(s.name, this._interfaceConfig.sensorIgnore))
@@ -64,7 +75,7 @@ export abstract class InterfaceBase<FTE extends string> {
       .filter(s => !this._sensorIgnoreList.includes(s.id))
       // .filter(ds => ds.id !== '00:15:8d:00:02:f2:42:b6-01-0006')
       .forEach(s => {
-        const { typeIndicator, measurementType: mapperMeasurementType } = typeMapper[s.foreignType]
+        const mapperMeasurementType = typeMapper[s.foreignType]
         const discoveryConfig = this._interfaceConfig.findDiscoveryConfig(s.name, 'sensor')
         if (!discoveryConfig) return // no configuration that matches `name` and `type`, stop here
         const extractedInfo = discoveryConfig.filter.exec(s.name)!.groups
@@ -73,6 +84,9 @@ export abstract class InterfaceBase<FTE extends string> {
           return
         }
 
+        const typeIndicator: MeasurementTypeEnum | undefined = !typeIndicators
+          ? undefined
+          : typeIndicators[s.foreignType]
         const nameCreateInfo = { ...extractedInfo, typeIndicator }
         const topic = discoveryConfig.template(nameCreateInfo)
         const measurementType = (discoveryConfig.type ?? mapperMeasurementType) as MeasurementTypeEnum | undefined
@@ -88,6 +102,7 @@ export abstract class InterfaceBase<FTE extends string> {
     this._interfaceConfig.sensorDefinition
       // Ignore discovered channels with the same unique ID
       .filter(s => {
+        //TODO warnen indien op ignore list
         const eqCh = this._sensorChannels.find(ch => ch.id === s.uid)
         if (eqCh) {
           const prefix = `Channel with equal UID ${s.uid} like ${s.topic} already discovered`
@@ -100,7 +115,7 @@ export abstract class InterfaceBase<FTE extends string> {
       .forEach(s => this.addSensor('defined sensor', new Sensor(s.uid as UID, s.topic, s.foreignType, s.type)))
   }
 
-  private addSensor(originalName: string, sensor: Sensor<FTE>): void {
+  private addSensor(originalName: string, sensor: Sensor<FTE>, lastupdated?: Date): void {
     this._log.log(
       `Found sensor "${originalName}" => "${sensor.topic}", type=${sensor.measurementType}, ` +
         `id=${sensor.id}${!sensor.state ? '' : ', state=' + JSON.stringify(sensor.state).replace(/\\"/, `"`)} `,
@@ -110,10 +125,35 @@ export abstract class InterfaceBase<FTE extends string> {
     this._sensorChannels.push(sensor)
 
     // send the initial state to the hub
-    if (sensor.state) this.sendSensorStateUpdate(sensor.id, sensor.state)
+    if (sensor.state) this.sendSensorStateUpdate(sensor.id, sensor.state, lastupdated)
   }
 
-  protected abstract sendSensorStateUpdate(id: UID, state: any): void
+  public discoverActuators(actuatorList: DiscoverableActuator<FATE>[], typeMapper: ActuatorTypeMapper<FATE>) {
+    actuatorList
+      .filter(a => !this._actuatorIgnoreList.includes(a.id))
+      .forEach(a => {
+        const id = a.id
+        const actuatorType = typeMapper[a.foreignType]
+        // const { nameExtension, measurementType, commandType } = ACTUATOR_TYPE_MAPPERS[da.type]
+        const discoveryInfo = this.getNameFromConfig(id, a.name, 'actuator')
+        if (!discoveryInfo) return
+        const topic = discoveryInfo.name + typeMapper.nameExtension
+
+        const logMessage =
+          `Found actuator "${topic}", type=${typeMapper.commandType}/${typeMapper.measurementType}, id=${a.uniqueid}` +
+          `, state=${JSON.stringify(a.state)}`
+        this._log.log(logMessage)
+
+        // push new sensor to channel list
+        const actuator = new Actuator(id, topic, a.type, typeMapper.measurementType, typeMapper.commandType)
+        this._actuatorChannels.push(actuator)
+
+        // send the initial state to the hub
+        this.sendSensorStateUpdate(id, a.state)
+      })
+  }
+
+  protected abstract sendSensorStateUpdate(id: UID, state: any, lastupdated?: Date): void
 
   protected getSensorChannel(id: UID): Sensor<FTE> | undefined {
     const sensorChannel = this._sensorChannels.find(sc => sc.id === id)

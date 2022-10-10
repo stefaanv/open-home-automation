@@ -2,7 +2,7 @@ import { LoggingService } from '@core/logging.service'
 import { MqttDriver } from '@core/mqtt.driver'
 import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { pick } from 'lodash'
+import { last, omit, pick } from 'lodash'
 import WebSocket from 'ws'
 import axios, { Axios } from 'axios'
 import Handlebars from 'handlebars'
@@ -42,8 +42,6 @@ import {
   SensorReadingValueWithoutType,
   SwitchPressed,
 } from '@core/sensor-reading-values'
-import { Sensor } from '@core/sensors-actuators/sensor.class'
-import { Actuator } from '@core/sensors-actuators/actuator.class'
 import { OnOffCommand } from '@core/commands/on-off.class'
 import { CommandParser, ValidationResult } from '@core/commands/parser.class'
 import { ColoredLightCommand } from '@core/commands/colored-light.class'
@@ -104,7 +102,8 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
           name: s.name,
           id: s.uniqueid,
           sensorIgnoreLogInfo: JSON.stringify(pick(s, ['name', 'manufacturername', 'modelid', 'state'])),
-          state: s.state,
+          state: omit(s.state, 'lastupdated'),
+          lastupdated: s.state.lastupdated,
         } as DiscoverableSensor<PhosconForeignTypeEnum>),
     )
     this.discoverSensors(discoveredSensors, SENSOR_TYPE_MAPPERS)
@@ -169,7 +168,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
       this._log.warn(`Unknown channel for '${actuatorName}', payload = ${JSON.stringify(payload)}`)
       return
     }
-    const result = await CommandParser.parse(channel.commandType, payload)
+    const result = await CommandParser.parse(channel.actuatorType, payload)
     if (result instanceof ValidationResult) {
       result.errorMessages.forEach(e => this._log.warn(e))
       return
@@ -196,7 +195,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
     this.sendSensorStateUpdate(id, state)
   }
 
-  protected sendSensorStateUpdate(id: UID, state: PhosconState) {
+  protected sendSensorStateUpdate(id: UID, state: PhosconState, lastupdated?: Date) {
     const channel = this.getSensorChannel(id)
     if (!channel) {
       this._log.error(`channel ${id} not found - unable to send update`)
@@ -205,7 +204,6 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
     const topicInfix = channel.topic
     const measurementValue = this.transformSensorState(channel, state)
 
-    const now = new Date()
     if (!measurementValue) {
       this._log.error(`Unable to transform foreign state ${JSON.stringify(state)}`)
       return
@@ -213,6 +211,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
     if (typeof measurementValue === 'object' && 'type' in measurementValue)
       delete (measurementValue as SensorReadingValueWithoutType).type
 
+    const now = lastupdated ?? new Date()
     channel.state = { time: now, value: measurementValue }
     const update = {
       origin: this._interfaceName,
@@ -308,7 +307,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
   }
 
   private transformActuatorCommand(actuator: PhosconActuator, cmd: Command): PhosconCommand {
-    switch (actuator.commandType) {
+    switch (actuator.actuatorType) {
       case 'relay':
         const onOffCmd: boolean = (cmd as OnOffCommand).action === 'on'
         return { on: onOffCmd } as PhosconOnOffCommand

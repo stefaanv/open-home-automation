@@ -1,75 +1,24 @@
-import { SensorTypeMapper } from '@core/channel-service/types'
+import { ActuatorTypeMapper, SensorTypeMapper } from '@core/channel-service/types'
 import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
-import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import {
-  PhosconSensorStateTypeEnum,
-  PhosconActuatorCommandTypeEnum,
-  PhosconOnOffCommand,
-  PhosconForeignTypeEnum,
-} from './types'
+import { PhosconActuatorTypeEnum, PhosconForeignTypeEnum } from './types'
 
 export const SENSOR_TYPE_MAPPERS: SensorTypeMapper<PhosconForeignTypeEnum> = {
-  ZHALightLevel: {
-    typeIndicator: 'lumi',
-    measurementType: 'illuminance',
-  },
-  ZHAPresence: {
-    typeIndicator: 'pres',
-    measurementType: 'presence',
-  },
-  ZHATemperature: {
-    typeIndicator: 'temp',
-    measurementType: 'temperature',
-  },
-  ZHAHumidity: {
-    typeIndicator: 'humi',
-    measurementType: 'humidity',
-  },
-  ZHAOpenClose: {
-    typeIndicator: 'cnct',
-    measurementType: 'contact',
-  },
-  ZHASwitch: {
-    typeIndicator: 'sw',
-    measurementType: 'switch',
-  },
-  ZHAAirQuality: {
-    typeIndicator: 'airq',
-    measurementType: 'air-quality',
-  },
-  'Color temperature light': {
-    typeIndicator: 'clgt',
-    measurementType: 'colored-light',
-  },
-  'On/Off plug-in unit': {
-    typeIndicator: 'relay',
-    measurementType: 'on-off',
-  },
-  'Range extender': {
-    typeIndicator: 'range-ext',
-    measurementType: undefined,
-  },
+  ZHALightLevel: 'illuminance',
+  ZHAPresence: 'presence',
+  ZHATemperature: 'temperature',
+  ZHAHumidity: 'humidity',
+  ZHAOpenClose: 'contact',
+  ZHASwitch: 'switch',
+  ZHAAirQuality: 'air-quality',
+  'Color temperature light': 'colored-light',
+  'On/Off plug-in unit': 'on-off',
+  'Range extender': undefined,
 }
 
-export const ACTUATOR_TYPE_MAPPERS: Record<
-  PhosconActuatorCommandTypeEnum,
-  { typeIndicator: string; measurementType: MeasurementTypeEnum; commandType: ActuatorTypeEnum }
-> = {
-  'On/Off plug-in unit': {
-    measurementType: 'on-off',
-    commandType: 'relay',
-    typeIndicator: '_relay',
-  },
-  'Range extender': {
-    measurementType: 'on-off',
-    commandType: 'relay',
-    typeIndicator: '_unused',
-  },
-  'Color temperature light': {
-    measurementType: 'illuminance', //TODO moet een nieuw sensor type worden !
-    commandType: 'colored-light',
-    typeIndicator: '_clgt',
-  },
+export const ACTUATOR_TYPE_MAPPERS: ActuatorTypeMapper<PhosconActuatorTypeEnum> = {
+  'On/Off plug-in unit': 'relay',
+  'Range extender': undefined,
+  'Color temperature light': 'colored-light',
 }
 
 /*
