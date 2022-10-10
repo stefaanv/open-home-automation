@@ -8,25 +8,30 @@
     "ignore": "(Range|Configuration|unknown|Daylight|Eethoek|On\\/Off|Presence|LightLevel|Temperature|ronde)[\\w\\s]*",
     "discover": [
       {
-        "filter": "(?<name>[\\w:]+)_(multi|lumi|cnct|plug|switch)"
+        "filter": "(?<name>[\\w:]+)_(multi|lumi|cnct|plug|switch)",
+        "template": "{{name}}_{{typeIndicator}}"
       }
-    ], 
-    "define":[{
-      "uid": "00:15:8d:00:02:f2:42:b6-01-0006",
-      "name": "test_cnct",
-      "type": "contact",
-      "foreignType": "ZHAOpenClose"
-    }]
+    ],
+    "define": [
+      {
+        "uid": "00:15:8d:00:02:f2:42:b6-01-0006",
+        "topic": "test_cnct",
+        "type": "contact",
+        "foreignType": "ZHAOpenClose"
+      }
+    ]
   },
   "actuators": {
     "ignore": "(Range|Configuration|On\\/Off)[\\w\\s]*",
     "discover": [
       {
         "filter": "(?<name>[\\w:]+)_plug",
+        "template": "{{name}}_{{typeExtension}}",
         "actuatorType": "relay"
       },
       {
         "filter": "(?<name>[\\w:]+)_clgt",
+        "template": "{{name}}_{{typeExtension}}",
         "actuatorType": "colored-light"
       }
     ]

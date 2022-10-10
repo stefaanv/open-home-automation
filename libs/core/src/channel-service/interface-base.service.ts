@@ -7,6 +7,17 @@ import { Sensor } from '@core/sensors-actuators/sensor.class'
 import { Actuator } from '@core/sensors-actuators/actuator.class'
 import { regexExtract, regexTest } from '@core/helpers/helpers'
 import { UID } from '@core/sensors-actuators/uid.type'
+import { pick } from 'lodash'
+import { SensorTypeMapper } from '@core/channel-service/types'
+import { MeasurementTypeEnum } from '@core/measurement-type.enum'
+
+export type DiscoverableSensor<FTE extends string> = {
+  name: string
+  id: UID
+  foreignType: FTE
+  sensorIgnoreLogInfo: string
+  state: any
+}
 
 /**
  * Verantwoordelijkheden
@@ -22,7 +33,7 @@ import { UID } from '@core/sensors-actuators/uid.type'
    - type: sensor type (eg ZHASwitch)
 */
 @Injectable()
-export class InterfaceBase<FTE extends string> {
+export abstract class InterfaceBase<FTE extends string> {
   protected _sensorIgnoreList: UID[] = []
   protected _sensorChannels: Sensor<FTE>[] = []
   protected _actuatorIgnoreList: UID[] = []
@@ -35,22 +46,74 @@ export class InterfaceBase<FTE extends string> {
     protected readonly _config: ConfigService,
     protected readonly _mqttDriver: MqttDriver,
   ) {
-    this._interfaceConfig = new InterfaceConfig(this._config, _interfaceName)
+    this._interfaceConfig = new InterfaceConfig(this._config, _interfaceName, _log)
   }
 
-  getNameFromConfig(id: UID, name: string, type: 'sensor' | 'actuator') {
-    const discoverConfig: DiscoveryConfigRegex[] =
-      this._interfaceConfig[type === 'sensor' ? 'sensorDiscover' : 'actuatorDiscover']
-    const matchingFilter = discoverConfig.find(f => regexTest(name, f.filter))
-    if (!matchingFilter) {
-      const msg =
-        `this is no matching filter for ${type} ${name} and the name does not match the ignore filter` +
-        ` this is probably not what you intended, please update the configuration`
-      this._log.warn(msg)
-      return undefined
-    }
-    return { name: regexExtract(name, matchingFilter.filter, 'name'), type: matchingFilter.type }
+  public discoverSensors(sensorList: DiscoverableSensor<FTE>[], typeMapper: SensorTypeMapper<FTE>) {
+    // store the UID's of sensors to be ignored
+    this._sensorIgnoreList = sensorList
+      .filter(s => regexTest(s.name, this._interfaceConfig.sensorIgnore))
+      .map(s => {
+        this._log.debug(`Ignoring sensor ${s.sensorIgnoreLogInfo}`)
+        return s
+      })
+      .map(ds => ds.id)
+
+    // Transform received/discovereds - sensors
+    sensorList
+      .filter(s => !this._sensorIgnoreList.includes(s.id))
+      // .filter(ds => ds.id !== '00:15:8d:00:02:f2:42:b6-01-0006')
+      .forEach(s => {
+        const { typeIndicator, measurementType: mapperMeasurementType } = typeMapper[s.foreignType]
+        const discoveryConfig = this._interfaceConfig.findDiscoveryConfig(s.name, 'sensor')
+        if (!discoveryConfig) return // no configuration that matches `name` and `type`, stop here
+        const extractedInfo = discoveryConfig.filter.exec(s.name)!.groups
+        if (!extractedInfo) {
+          this._log.error(`Unable to extract name convertion information from "${s.name}"`)
+          return
+        }
+
+        const nameCreateInfo = { ...extractedInfo, typeIndicator }
+        const topic = discoveryConfig.template(nameCreateInfo)
+        const measurementType = (discoveryConfig.type ?? mapperMeasurementType) as MeasurementTypeEnum | undefined
+        if (!measurementType) {
+          this._sensorIgnoreList.push(s.id)
+          this._log.debug(`Ignoring sensor ${s.sensorIgnoreLogInfo}`)
+          return
+        }
+        this.addSensor(s.name, new Sensor(s.id, topic, s.foreignType, measurementType, s.state))
+      })
+
+    // Transform defined sensors
+    this._interfaceConfig.sensorDefinition
+      // Ignore discovered channels with the same unique ID
+      .filter(s => {
+        const eqCh = this._sensorChannels.find(ch => ch.id === s.uid)
+        if (eqCh) {
+          const prefix = `Channel with equal UID ${s.uid} like ${s.topic} already discovered`
+          if (eqCh.topic === s.topic && eqCh.measurementType === s.type) this._log.warn(prefix)
+          else this._log.error(prefix + `- ignoring the definition, discovery takes precedence`)
+          return false
+        }
+        return true
+      })
+      .forEach(s => this.addSensor('defined sensor', new Sensor(s.uid as UID, s.topic, s.foreignType, s.type)))
   }
+
+  private addSensor(originalName: string, sensor: Sensor<FTE>): void {
+    this._log.log(
+      `Found sensor "${originalName}" => "${sensor.topic}", type=${sensor.measurementType}, ` +
+        `id=${sensor.id}${!sensor.state ? '' : ', state=' + JSON.stringify(sensor.state).replace(/\\"/, `"`)} `,
+    )
+
+    // push new sensor to channel list
+    this._sensorChannels.push(sensor)
+
+    // send the initial state to the hub
+    if (sensor.state) this.sendSensorStateUpdate(sensor.id, sensor.state)
+  }
+
+  protected abstract sendSensorStateUpdate(id: UID, state: any): void
 
   protected getSensorChannel(id: UID): Sensor<FTE> | undefined {
     const sensorChannel = this._sensorChannels.find(sc => sc.id === id)

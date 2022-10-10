@@ -1,59 +1,74 @@
+import { SensorTypeMapper } from '@core/channel-service/types'
 import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
-import { PhosconSensorStateTypeEnum, PhosconActuatorCommandTypeEnum, PhosconOnOffCommand } from './types'
-
-export const SENSOR_TYPE_MAPPERS: Record<
+import {
   PhosconSensorStateTypeEnum,
-  { nameExtension: string; measurementType: MeasurementTypeEnum }
-> = {
+  PhosconActuatorCommandTypeEnum,
+  PhosconOnOffCommand,
+  PhosconForeignTypeEnum,
+} from './types'
+
+export const SENSOR_TYPE_MAPPERS: SensorTypeMapper<PhosconForeignTypeEnum> = {
   ZHALightLevel: {
-    nameExtension: '_lumi',
+    typeIndicator: 'lumi',
     measurementType: 'illuminance',
   },
   ZHAPresence: {
-    nameExtension: '_pres',
+    typeIndicator: 'pres',
     measurementType: 'presence',
   },
   ZHATemperature: {
-    nameExtension: '_temp',
+    typeIndicator: 'temp',
     measurementType: 'temperature',
   },
   ZHAHumidity: {
-    nameExtension: '_humi',
+    typeIndicator: 'humi',
     measurementType: 'humidity',
   },
   ZHAOpenClose: {
-    nameExtension: '_cnct',
+    typeIndicator: 'cnct',
     measurementType: 'contact',
   },
   ZHASwitch: {
-    nameExtension: '_sw',
+    typeIndicator: 'sw',
     measurementType: 'switch',
   },
   ZHAAirQuality: {
-    nameExtension: '_airq',
+    typeIndicator: 'airq',
     measurementType: 'air-quality',
+  },
+  'Color temperature light': {
+    typeIndicator: 'clgt',
+    measurementType: 'colored-light',
+  },
+  'On/Off plug-in unit': {
+    typeIndicator: 'relay',
+    measurementType: 'on-off',
+  },
+  'Range extender': {
+    typeIndicator: 'range-ext',
+    measurementType: undefined,
   },
 }
 
 export const ACTUATOR_TYPE_MAPPERS: Record<
   PhosconActuatorCommandTypeEnum,
-  { nameExtension: string; measurementType: MeasurementTypeEnum; commandType: ActuatorTypeEnum }
+  { typeIndicator: string; measurementType: MeasurementTypeEnum; commandType: ActuatorTypeEnum }
 > = {
   'On/Off plug-in unit': {
     measurementType: 'on-off',
     commandType: 'relay',
-    nameExtension: '_relay',
+    typeIndicator: '_relay',
   },
   'Range extender': {
     measurementType: 'on-off',
     commandType: 'relay',
-    nameExtension: '_unused',
+    typeIndicator: '_unused',
   },
   'Color temperature light': {
     measurementType: 'illuminance', //TODO moet een nieuw sensor type worden !
     commandType: 'colored-light',
-    nameExtension: '_clgt',
+    typeIndicator: '_clgt',
   },
 }
 

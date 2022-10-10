@@ -9,14 +9,17 @@
     "discover": [
       {
         "filter": "(?<topic>[\\w:]+(_temp|_temp_rfx))",
+        "template": "{{name}}_{{typeExtension}}",
         "type": "temperature"
       },
       {
         "filter": "(?<topic>[\\w:]+_vocht)",
+        "template": "{{name}}_{{typeExtension}}",
         "type": "humidity"
       },
       {
         "filter": "vlg_(?<topic>[\\w:]+)",
+        "template": "{{name}}_{{typeExtension}}",
         "type": "on-off"
       }
     ],

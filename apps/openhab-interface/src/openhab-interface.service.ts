@@ -69,6 +69,10 @@ export class OpenhabInterfaceService extends InterfaceBase<OpenHAB_SensorForeign
     es.onerror = error => this._log.error(JSON.stringify(error))
   }
 
+  protected sendSensorStateUpdate(id: UID, state: any): void {
+    throw new Error('Method not implemented.')
+  }
+
   private async configure() {
     // const discoveredActuators = await this._axios.get<Record<number, PhosconActuatorDiscoveryItem>>('lights')
 
@@ -97,6 +101,8 @@ export class OpenhabInterfaceService extends InterfaceBase<OpenHAB_SensorForeign
         return ds
       })
       .map(ds => ds.name as UID)
+    /*
+
     // Transform received/discovereds - sensors
     discoveredSensors.data
       .filter(s => !this._sensorIgnoreList.includes(s.name as UID))
@@ -128,7 +134,6 @@ export class OpenhabInterfaceService extends InterfaceBase<OpenHAB_SensorForeign
         // send the initial state to the hub
         // this.sendSensorStateUpdate(id, ds.state)
       })
-    /*
 
     // Transform defined sensors
     this._interfaceConfig.sensorDefinition

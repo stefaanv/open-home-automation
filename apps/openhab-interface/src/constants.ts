@@ -1,32 +1,29 @@
-import { MeasurementTypeEnum } from '@core/measurement-type.enum'
+import { SensorTypeMapper } from '@core/channel-service/types'
 import { OpenHAB_SensorForeignTypeEnum } from './types'
 
-export const SENSOR_TYPE_MAPPERS: Record<
-  OpenHAB_SensorForeignTypeEnum,
-  { nameExtension: string; measurementType: MeasurementTypeEnum }
-> = {
+export const SENSOR_TYPE_MAPPERS: SensorTypeMapper<OpenHAB_SensorForeignTypeEnum> = {
   'Number:Temperature': {
-    nameExtension: '_temp',
+    typeIndicator: 'temp',
     measurementType: 'temperature',
   },
   'Number:Humidity': {
-    nameExtension: '_humi',
+    typeIndicator: 'humi',
     measurementType: 'humidity',
   },
   'Number:Dimensionless': {
-    nameExtension: '_ignore',
+    typeIndicator: 'ignore',
     measurementType: undefined,
   },
   Number: {
-    nameExtension: '_ignore',
+    typeIndicator: 'ignore',
     measurementType: undefined,
   },
   Switch: {
-    nameExtension: '_vlg',
+    typeIndicator: 'vlg',
     measurementType: 'on-off',
   },
   Contact: {
-    nameExtension: '_cnct',
+    typeIndicator: 'cnct',
     measurementType: 'contact',
   },
 }

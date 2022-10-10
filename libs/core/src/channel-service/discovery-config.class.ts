@@ -2,42 +2,54 @@ import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { ConfigService } from '@nestjs/config'
 import { compile } from 'handlebars'
+import { IsNotEmpty, IsString, validate } from 'class-validator'
+import { LoggingService } from '@core/logging.service'
+import { regexExtract, regexTest } from '@core/helpers/helpers'
 
-export type NameTransformerString = { extractor: string; template: string }
-export type NameTransformerRegex = { extractor: RegExp; template: HandlebarsTemplateDelegate }
+export class DiscoveryConfigString {
+  @IsNotEmpty()
+  @IsString()
+  filter!: string
 
-export type DiscoveryConfigString = {
-  filter: string
-  nameTransformer: NameTransformerString | undefined
+  @IsNotEmpty()
+  @IsString()
+  template!: string
+
   type: MeasurementTypeEnum | ActuatorTypeEnum | undefined
 }
 export type DiscoveryConfigRegex = {
   filter: RegExp
-  nameTransformer: NameTransformerRegex
+  template: HandlebarsTemplateDelegate
   type: MeasurementTypeEnum | ActuatorTypeEnum | undefined
 }
 
-const defaultNameTransformerRegex = { extractor: new RegExp(/(?<all>.*)/), template: '{{all}}' }
-
 export type SensorDefinitionConfig<FTE extends string> = {
-  id: string
-  topicInfix: string
-  valuetype: MeasurementTypeEnum
+  uid: string
+  topic: string
+  type: MeasurementTypeEnum
   foreignType: FTE
 }
 
 export type ActuatorDefinitionConfig<FTE extends string> = {
   uid: string
-  name: string
+  topic: string
   type: ActuatorTypeEnum
   foreignType: FTE
 }
 
-function convertTransformer(value: NameTransformerString) {
-  return {
-    extractor: new RegExp(value.extractor),
-    template: Handlebars.compile(value.template),
-  } as NameTransformerRegex
+async function validateOrLog(discoveryConfigElement: DiscoveryConfigString, logger: LoggingService) {
+  const errors = await validate(discoveryConfigElement)
+  if (errors.length / 0) {
+    const msg = `${JSON.stringify(discoveryConfigElement)} is not an valid discovery configuration element : ${errors
+      .map(toString)
+      .join('; ')}`
+    logger.warn(msg)
+  }
+  if (!discoveryConfigElement.template) {
+    const msg = `${discoveryConfigElement.template} is not an valid handlebars template`
+    logger.warn(msg)
+  }
+  return true
 }
 
 export class InterfaceConfig<FTE extends string> {
@@ -48,11 +60,12 @@ export class InterfaceConfig<FTE extends string> {
   readonly actuatorDiscover: DiscoveryConfigRegex[]
   readonly actuatorDefinition: ActuatorDefinitionConfig<FTE>[]
 
-  constructor(config: ConfigService, interfaceName: string) {
+  constructor(config: ConfigService, interfaceName: string, private readonly _log: LoggingService) {
     this.sensorIgnore = new RegExp(config.get<string>([interfaceName, 'sensors', 'ignore'].join('.'), ''))
     this.sensorDiscover = config
       .get<DiscoveryConfigString[]>([interfaceName, 'sensors', 'discover'].join('.'), [])
-      .map(e => ({ filter: new RegExp(e.filter), type: e.type }))
+      .filter(async e => await validateOrLog(e, this._log))
+      .map(e => ({ filter: new RegExp(e.filter), template: compile(e.template), type: e.type }))
     this.sensorDefinition = config.get<SensorDefinitionConfig<FTE>[]>(
       [interfaceName, 'sensors', 'define'].join('.'),
       [],
@@ -61,10 +74,23 @@ export class InterfaceConfig<FTE extends string> {
     this.actuatorIgnore = new RegExp(config.get<string>([interfaceName, 'actuators', 'ignore'].join('.'), ''))
     this.actuatorDiscover = config
       .get<DiscoveryConfigString[]>([interfaceName, 'actuators', 'discover'].join('.'), [])
-      .map(e => ({ filter: new RegExp(e.filter), type: e.type }))
+      .map(e => ({ filter: new RegExp(e.filter), template: compile(e.template), type: e.type }))
     this.actuatorDefinition = config.get<ActuatorDefinitionConfig<FTE>[]>(
       [interfaceName, 'actuators', 'define'].join('.'),
       [],
     )
+  }
+
+  findDiscoveryConfig(name: string, type: 'sensor' | 'actuator') {
+    const discoverConfig: DiscoveryConfigRegex[] = type === 'sensor' ? this.sensorDiscover : this.actuatorDiscover
+    const matchingFilter = discoverConfig.find(f => regexTest(name, f.filter))
+    if (!matchingFilter) {
+      const msg =
+        `this is no matching filter for ${type} ${name} and the name does not match the ignore filter` +
+        ` this is probably not what you intended, please update the configuration`
+      this._log.warn(msg)
+      return undefined
+    }
+    return matchingFilter
   }
 }

@@ -27,7 +27,7 @@ import {
   PhosconColoredLightState,
 } from './types'
 import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from '@core/measurement-type.enum'
-import { InterfaceBase } from '@core/channel-service/interface-base.service'
+import { InterfaceBase, DiscoverableSensor } from '@core/channel-service/interface-base.service'
 import { INTERFACE_NAME_TOKEN } from '@core/core.module'
 import { Command } from '@core/commands/command.type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
@@ -97,59 +97,17 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
   private async configureSensors() {
     // Get sensor info from the Phoscon API
     const axiosResult = await this._axios.get<Record<number, PhosconSensorDiscoveryItem>>('sensors')
-    const discoveredSensors = Object.values(axiosResult.data)
-
-    // store the UID's of sensors to be ignored
-    this._sensorIgnoreList = discoveredSensors
-      .filter(ds => regexTest(ds.name, this._interfaceConfig.sensorIgnore))
-      .map(ds => {
-        const info = pick(ds, ['name', 'manufacturername', 'modelid', 'state'])
-        this._log.debug(`Ignoring sensor ${JSON.stringify(info)}`)
-        return ds
-      })
-      .map(ds => ds.uniqueid as UID)
-
-    // Transform received/discovereds - sensors
-    discoveredSensors
-      .filter(s => !this._sensorIgnoreList.includes(s.uniqueid as UID))
-      // .filter(ds => ds.uid !== '00:15:8d:00:02:f2:42:b6-01-0006')
-      .forEach(ds => {
-        const id = ds.uniqueid as UID
-        const typeMapper = SENSOR_TYPE_MAPPERS[ds.type]
-        const discoveryInfo = this.getNameFromConfig(id, ds.name, 'sensor')
-        if (!discoveryInfo) return
-        const topic = discoveryInfo.name + typeMapper.nameExtension
-        const valueType = (discoveryInfo.type ?? typeMapper.measurementType) as MeasurementTypeEnum
-
-        const logMessage =
-          `Found sensor "${topic}", type=${typeMapper.measurementType}, id=${ds.uniqueid}` +
-          `, state=${JSON.stringify(ds.state)}`
-        this._log.log(logMessage)
-
-        // push new sensor to channel list
-        const sensor = new Sensor(id, topic, ds.type, valueType)
-        this._sensorChannels.push(sensor)
-
-        // send the initial state to the hub
-        this.sendSensorStateUpdate(id, ds.state)
-      })
-
-    // Transform defined sensors
-    this._interfaceConfig.sensorDefinition
-      // Ignore discovered channels with the same unique ID
-      .filter(s => {
-        const eqCh = this._sensorChannels.find(ch => ch.id === s.id)
-        if (eqCh) {
-          if (eqCh.topic === s.topicInfix && eqCh.measurementType === s.valuetype)
-            this._log.warn(`Channel with equal UID ${s.id} like ${s.topicInfix} already discovered`)
-          else
-            this._log.error(
-              `Channel with equal UID ${s.id} like ${s.topicInfix}) already discovered ` +
-                `- ignoring the definition, discovery takes precedence`,
-            )
-        }
-        return true
-      })
+    const discoveredSensors = Object.values(axiosResult.data).map(
+      s =>
+        ({
+          foreignType: s.type,
+          name: s.name,
+          id: s.uniqueid,
+          sensorIgnoreLogInfo: JSON.stringify(pick(s, ['name', 'manufacturername', 'modelid', 'state'])),
+          state: s.state,
+        } as DiscoverableSensor<PhosconForeignTypeEnum>),
+    )
+    this.discoverSensors(discoveredSensors, SENSOR_TYPE_MAPPERS)
 
     // Start the sensors readout through Pposcon API WebSocket
     const eventUrl = this._config.get<string>(EVENT_URL, '')
@@ -173,6 +131,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
       .map(ds => ds.uniqueid as UID)
 
     // Transform received/discovered - actuators
+    /*
     discoveredActuators
       .filter(s => !this._actuatorIgnoreList.includes(s.uniqueid as UID))
       .forEach(da => {
@@ -200,6 +159,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
     const prefix = this._config.get<string>('mqtt.topicPrefix')
     const mqttTopics = this._actuatorChannels.map<string>(a => commandTemplate({ prefix, actuatorName: a.topic }))
     this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
+    */
   }
 
   private async mqttCallback(actuatorName: string, payload: any) {
@@ -236,7 +196,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
     this.sendSensorStateUpdate(id, state)
   }
 
-  private sendSensorStateUpdate(id: UID, state: PhosconState) {
+  protected sendSensorStateUpdate(id: UID, state: PhosconState) {
     const channel = this.getSensorChannel(id)
     if (!channel) {
       this._log.error(`channel ${id} not found - unable to send update`)
