@@ -1,9 +1,23 @@
 import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { ConfigService } from '@nestjs/config'
+import { compile } from 'handlebars'
 
-export type DiscoveryConfigString = { filter: string; type: MeasurementTypeEnum | ActuatorTypeEnum | undefined }
-export type DiscoveryConfigRegex = { filter: RegExp; type: MeasurementTypeEnum | ActuatorTypeEnum | undefined }
+export type NameTransformerString = { extractor: string; template: string }
+export type NameTransformerRegex = { extractor: RegExp; template: HandlebarsTemplateDelegate }
+
+export type DiscoveryConfigString = {
+  filter: string
+  nameTransformer: NameTransformerString | undefined
+  type: MeasurementTypeEnum | ActuatorTypeEnum | undefined
+}
+export type DiscoveryConfigRegex = {
+  filter: RegExp
+  nameTransformer: NameTransformerRegex
+  type: MeasurementTypeEnum | ActuatorTypeEnum | undefined
+}
+
+const defaultNameTransformerRegex = { extractor: new RegExp(/(?<all>.*)/), template: '{{all}}' }
 
 export type SensorDefinitionConfig<FTE extends string> = {
   id: string
@@ -17,6 +31,13 @@ export type ActuatorDefinitionConfig<FTE extends string> = {
   name: string
   type: ActuatorTypeEnum
   foreignType: FTE
+}
+
+function convertTransformer(value: NameTransformerString) {
+  return {
+    extractor: new RegExp(value.extractor),
+    template: Handlebars.compile(value.template),
+  } as NameTransformerRegex
 }
 
 export class InterfaceConfig<FTE extends string> {
