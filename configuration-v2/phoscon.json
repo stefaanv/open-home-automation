@@ -42,12 +42,12 @@
     "discover": [
       {
         "filter": "(?<name>[\\w:]+)_plug",
-        "template": "{{name}}_{{typeExtension}}",
+        "template": "{{name}}_{{typeIndicator}}",
         "actuatorType": "relay"
       },
       {
         "filter": "(?<name>[\\w:]+)_clgt",
-        "template": "{{name}}_{{typeExtension}}",
+        "template": "{{name}}_{{typeIndicator}}",
         "actuatorType": "colored-light"
       }
     ]

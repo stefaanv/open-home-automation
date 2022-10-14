@@ -1,21 +1,18 @@
 import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
-import { TimedSensorReadingValue } from '@core/sensor-reading-values'
-import { Sensor } from './sensor.class'
-import { MeasurementTypeEnum } from '@core/measurement-type.enum'
+import { SensorActuatorBase } from './sensor-actuator-base.class'
 import { UID } from './uid.type'
 
-export class Actuator<FTE extends string> extends Sensor<FTE> {
+export class Actuator<FATE extends string> extends SensorActuatorBase<FATE> {
   public readonly actuatorType: ActuatorTypeEnum
 
   constructor(
     id: UID,
     topic: string,
-    foreignType: FTE,
-    measurementType: MeasurementTypeEnum,
+    foreignType: FATE,
     actuatorType: ActuatorTypeEnum,
-    state?: TimedSensorReadingValue,
+    foreignConfig: any = undefined,
   ) {
-    super(id, topic, foreignType, measurementType, state)
+    super(id, topic, foreignType, foreignConfig)
     this.actuatorType = actuatorType
   }
 }

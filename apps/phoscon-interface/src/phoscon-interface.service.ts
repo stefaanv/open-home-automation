@@ -25,9 +25,10 @@ import {
   PhosconForeignTypeEnum,
   PhosconColoredLightCommand,
   PhosconColoredLightState,
+  PhosconActuatorTypeEnum,
 } from './types'
 import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from '@core/measurement-type.enum'
-import { InterfaceBase, DiscoverableSensor } from '@core/channel-service/interface-base.service'
+import { InterfaceBase, DiscoverableSensor, DiscoverableActuator } from '@core/channel-service/interface-base.service'
 import { INTERFACE_NAME_TOKEN } from '@core/core.module'
 import { Command } from '@core/commands/command.type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
@@ -55,7 +56,7 @@ const EMPTY_ERROR_MSG = ` configuration setting should not be empty`
 //TODO inkomende (mqtt) commando's valideren + foutmelding indien niet OK
 
 @Injectable()
-export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnum> {
+export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnum, PhosconActuatorTypeEnum> {
   private readonly _apiKey: string
   private readonly _axios!: Axios
 
@@ -98,12 +99,13 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
     const discoveredSensors = Object.values(axiosResult.data).map(
       s =>
         ({
-          foreignType: s.type,
-          name: s.name,
           id: s.uniqueid,
+          name: s.name,
+          foreignType: s.type,
           sensorIgnoreLogInfo: JSON.stringify(pick(s, ['name', 'manufacturername', 'modelid', 'state'])),
           state: omit(s.state, 'lastupdated'),
           lastupdated: s.state.lastupdated,
+          foreignConfig: s.config,
         } as DiscoverableSensor<PhosconForeignTypeEnum>),
     )
     this.discoverSensors(discoveredSensors, SENSOR_TYPE_MAPPERS)
@@ -122,43 +124,22 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
   private async configureActuators() {
     // Get actuator info from the Phoscon API
     const axiosResult = await this._axios.get<Record<number, PhosconActuatorDiscoveryItem>>('lights')
-    const discoveredActuators = Object.values(axiosResult.data)
-
-    // store the UID's of actuators to be ignored
-    this._actuatorIgnoreList = discoveredActuators
-      .filter(ds => regexTest(ds.name, this._interfaceConfig.actuatorIgnore))
-      .map(ds => ds.uniqueid as UID)
-
-    // Transform received/discovered - actuators
-    /*
-    discoveredActuators
-      .filter(s => !this._actuatorIgnoreList.includes(s.uniqueid as UID))
-      .forEach(da => {
-        const id = da.uniqueid as UID
-        const typeMapper = ACTUATOR_TYPE_MAPPERS[da.type]
-        // const { nameExtension, measurementType, commandType } = ACTUATOR_TYPE_MAPPERS[da.type]
-        const discoveryInfo = this.getNameFromConfig(id, da.name, 'actuator')
-        if (!discoveryInfo) return
-        const topic = discoveryInfo.name + typeMapper.nameExtension
-
-        const logMessage =
-          `Found actuator "${topic}", type=${typeMapper.commandType}/${typeMapper.measurementType}, id=${da.uniqueid}` +
-          `, state=${JSON.stringify(da.state)}`
-        this._log.log(logMessage)
-
-        // push new sensor to channel list
-        const actuator = new Actuator(id, topic, da.type, typeMapper.measurementType, typeMapper.commandType)
-        this._actuatorChannels.push(actuator)
-
-        // send the initial state to the hub
-        this.sendSensorStateUpdate(id, da.state)
-      })
+    const discoveredActuators = Object.values(axiosResult.data).map(
+      a =>
+        ({
+          id: a.uniqueid,
+          name: a.name,
+          foreignType: a.type,
+          actuatorIgnoreLogInfo: JSON.stringify(pick(a, ['name', 'manufacturername', 'modelid'])),
+          foreignConfig: undefined,
+        } as DiscoverableActuator<PhosconActuatorTypeEnum>),
+    )
+    this.discoverActuators(discoveredActuators, ACTUATOR_TYPE_MAPPERS)
 
     const commandTemplate = Handlebars.compile(this._config.get<string>('mqtt.commandTemplate'))
     const prefix = this._config.get<string>('mqtt.topicPrefix')
     const mqttTopics = this._actuatorChannels.map<string>(a => commandTemplate({ prefix, actuatorName: a.topic }))
     this._mqttDriver.subscribe((actuatorName: string, data: any) => this.mqttCallback(actuatorName, data), mqttTopics)
-    */
   }
 
   private async mqttCallback(actuatorName: string, payload: any) {
@@ -196,7 +177,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
   }
 
   protected sendSensorStateUpdate(id: UID, state: PhosconState, lastupdated?: Date) {
-    const channel = this.getSensorChannel(id)
+    const channel = this._sensorChannels.find(s => s.id === id)
     if (!channel) {
       this._log.error(`channel ${id} not found - unable to send update`)
       return

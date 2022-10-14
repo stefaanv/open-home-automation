@@ -5,7 +5,7 @@ import { compile } from 'handlebars'
 import { IsNotEmpty, IsString, validate } from 'class-validator'
 import { LoggingService } from '@core/logging.service'
 import { regexTest } from '@core/helpers/helpers'
-import { SensorTypeMapper } from './types'
+import { ActuatorTypeMapper, SensorTypeMapper } from './types'
 
 export class DiscoveryConfigString {
   @IsNotEmpty()
@@ -53,17 +53,18 @@ async function validateOrLog(discoveryConfigElement: DiscoveryConfigString, logg
   return true
 }
 
-export class InterfaceConfig<FTE extends string> {
-  readonly typeIndicatorList: SensorTypeMapper<FTE> | undefined
+export class InterfaceConfig<FTE extends string, FATE extends FTE> {
+  readonly sensorTypeIndicatorList: SensorTypeMapper<FTE> | undefined
   readonly sensorIgnore: RegExp
   readonly sensorDiscover: DiscoveryConfigRegex[]
   readonly sensorDefinition: SensorDefinitionConfig<FTE>[]
+  readonly actuatorTypeIndicatorList: ActuatorTypeMapper<FATE> | undefined
   readonly actuatorIgnore: RegExp
   readonly actuatorDiscover: DiscoveryConfigRegex[]
-  readonly actuatorDefinition: ActuatorDefinitionConfig<FTE>[]
+  readonly actuatorDefinition: ActuatorDefinitionConfig<FATE>[]
 
   constructor(config: ConfigService, interfaceName: string, private readonly _log: LoggingService) {
-    this.typeIndicatorList = config.get<Record<FTE, MeasurementTypeEnum>>(
+    this.sensorTypeIndicatorList = config.get<Record<FTE, MeasurementTypeEnum>>(
       [interfaceName, 'sensors', 'typeIndicatorList'].join('.'),
     )
     this.sensorIgnore = new RegExp(config.get<string>([interfaceName, 'sensors', 'ignore'].join('.'), ''))
@@ -76,11 +77,14 @@ export class InterfaceConfig<FTE extends string> {
       [],
     )
 
+    this.actuatorTypeIndicatorList = config.get<Record<FTE, ActuatorTypeEnum>>(
+      [interfaceName, 'actuators', 'typeIndicatorList'].join('.'),
+    )
     this.actuatorIgnore = new RegExp(config.get<string>([interfaceName, 'actuators', 'ignore'].join('.'), ''))
     this.actuatorDiscover = config
       .get<DiscoveryConfigString[]>([interfaceName, 'actuators', 'discover'].join('.'), [])
       .map(e => ({ filter: new RegExp(e.filter), template: compile(e.template), type: e.type }))
-    this.actuatorDefinition = config.get<ActuatorDefinitionConfig<FTE>[]>(
+    this.actuatorDefinition = config.get<ActuatorDefinitionConfig<FATE>[]>(
       [interfaceName, 'actuators', 'define'].join('.'),
       [],
     )
