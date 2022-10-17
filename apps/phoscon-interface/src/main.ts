@@ -6,7 +6,7 @@ import { PhosconInterfaceModule } from './phoscon-interface.module'
 
 async function bootstrap() {
   const app = await NestFactory.create(PhosconInterfaceModule)
-  const logger = app.get(LoggingService)
+  const logger = await app.resolve(LoggingService)
   const interfaceName = app.get(INTERFACE_NAME_TOKEN)
   const port = await nextAvailablePort()
   logger.setContext('main')

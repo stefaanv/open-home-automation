@@ -8,6 +8,8 @@ import { regexExtract } from './helpers/helpers'
 
 export type CommandCallback = (actuatorName: string, payload: any) => void
 
+//TODO 1 keer subscriben op .../command/... ipv enkel actuator afzonderlijk
+
 @Injectable()
 export class MqttDriver {
   private _mqttClient: mqtt.IMqttClient
@@ -17,7 +19,7 @@ export class MqttDriver {
   private _actuatorNameExtractor: RegExp
 
   constructor(private readonly _log: LoggingService, private readonly _config: ConfigService) {
-    this._log.setContext(MqttDriver.name)
+    this._log.setContext('mqtt')
     const brokerUrl = this._config.get<string>('mqtt.broker', 'mqtt://localhost')
     this._topicPrefix = this._config.get<string>('mqtt.topicPrefix', 'oha')
     this._actuatorNameExtractor = new RegExp(this._config.get<string>('mqtt.actuatorNameExtractor', ''))

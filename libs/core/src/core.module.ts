@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, Scope } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { LoggingService } from './logging.service'
 import { MqttDriver } from './mqtt.driver'
@@ -15,7 +15,7 @@ export const ACTUATOR_TYPE_MAPPERS_TOKEN = 'ACTUATOR_TRANSFORMERS'
       load: [configuration],
     }),
   ],
-  providers: [LoggingService, MqttDriver],
-  exports: [LoggingService, MqttDriver],
+  providers: [{ provide: LoggingService, useClass: LoggingService, scope: Scope.TRANSIENT }, MqttDriver],
+  exports: [MqttDriver, LoggingService],
 })
 export class CoreModule {}

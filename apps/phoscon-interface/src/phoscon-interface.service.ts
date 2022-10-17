@@ -28,11 +28,11 @@ import {
   PhosconActuatorTypeEnum,
 } from './types'
 import { MeasurementTypeEnum, NumericMeasurementTypeEnum } from '@core/measurement-type.enum'
-import { InterfaceBase, DiscoverableSensor, DiscoverableActuator } from '@core/channel-service/interface-base.service'
+import { InterfaceBase } from '@core/channel-service/interface-base.service'
+import { DiscoverableSensor, DiscoverableActuator } from '@core/channel-service/types'
 import { INTERFACE_NAME_TOKEN } from '@core/core.module'
 import { Command } from '@core/commands/command.type'
 import { ACTUATOR_TYPE_MAPPERS, SENSOR_TYPE_MAPPERS } from './constants'
-import { regexTest } from '@core/helpers/helpers'
 import {
   ColoredLight,
   Numeric,
@@ -67,8 +67,6 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
     config: ConfigService,
   ) {
     super(interfaceName, log, config, mqttDriver)
-    // set log context
-    this._log.setContext(PhosconInterfaceService.name)
 
     // retrieve API key and BASE URL from config
     this._apiKey = this._config.get<string>(APIKEY_KEY, '')
@@ -131,7 +129,8 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
           name: a.name,
           foreignType: a.type,
           actuatorIgnoreLogInfo: JSON.stringify(pick(a, ['name', 'manufacturername', 'modelid'])),
-          foreignConfig: undefined,
+          foreignConfig: a,
+          state: a.state,
         } as DiscoverableActuator<PhosconActuatorTypeEnum>),
     )
     this.discoverActuators(discoveredActuators, ACTUATOR_TYPE_MAPPERS)
@@ -176,38 +175,6 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
     this.sendSensorStateUpdate(id, state)
   }
 
-  protected sendSensorStateUpdate(id: UID, state: PhosconState, lastupdated?: Date) {
-    const channel = this._sensorChannels.find(s => s.id === id)
-    if (!channel) {
-      this._log.error(`channel ${id} not found - unable to send update`)
-      return
-    }
-    const topicInfix = channel.topic
-    const measurementValue = this.transformSensorState(channel, state)
-
-    if (!measurementValue) {
-      this._log.error(`Unable to transform foreign state ${JSON.stringify(state)}`)
-      return
-    }
-    if (typeof measurementValue === 'object' && 'type' in measurementValue)
-      delete (measurementValue as SensorReadingValueWithoutType).type
-
-    const now = lastupdated ?? new Date()
-    channel.state = { time: now, value: measurementValue }
-    const update = {
-      origin: this._interfaceName,
-      time: now,
-      type: channel.measurementType,
-      value: measurementValue,
-    }
-
-    try {
-      this._mqttDriver.sendSensorStateUpdate(topicInfix, update)
-    } catch (error) {
-      this._log.error(JSON.stringify(error))
-    }
-  }
-
   private numericStateFactory(
     value: number,
     unit: string,
@@ -217,7 +184,7 @@ export class PhosconInterfaceService extends InterfaceBase<PhosconForeignTypeEnu
     return { type: type as NumericMeasurementTypeEnum, unit, value, formattedValue: formatter(value, unit) }
   }
 
-  private transformSensorState(sensor: PhosconSensor, originalState: PhosconState): SensorReadingValue | undefined {
+  protected transformSensorState(sensor: PhosconSensor, originalState: PhosconState): SensorReadingValue | undefined {
     switch (sensor.foreignType) {
       case 'ZHALightLevel': {
         const state = originalState as PhosconLightLevelState

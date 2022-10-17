@@ -7,27 +7,16 @@ import { Sensor } from '@core/sensors-actuators/sensor.class'
 import { Actuator } from '@core/sensors-actuators/actuator.class'
 import { regexTest } from '@core/helpers/helpers'
 import { UID } from '@core/sensors-actuators/uid.type'
-import { ActuatorTypeMapper, SensorTypeMapper } from '@core/channel-service/types'
+import {
+  ActuatorTypeMapper,
+  DiscoverableActuator,
+  DiscoverableSensor,
+  SensorTypeMapper,
+} from '@core/channel-service/types'
 import { MeasurementTypeEnum } from '@core/measurement-type.enum'
 import { ActuatorTypeEnum } from '@core/commands/actuator-type.enum'
-
-export type DiscoverableSensor<FTE extends string> = {
-  name: string
-  id: UID
-  foreignType: FTE
-  sensorIgnoreLogInfo: string
-  state: any
-  lastupdated: Date | undefined
-  foreignConfig: any
-}
-
-export type DiscoverableActuator<FATE extends string> = {
-  name: string
-  id: UID
-  foreignType: FATE
-  actuatorIgnoreLogInfo: string
-  foreignConfig: any
-}
+import { ACTUATOR_TO_MEASUREMENT_TYPE } from './constants'
+import { SensorReadingValue, SensorReadingValueWithoutType } from '@core/sensor-reading-values'
 
 /**
  * Verantwoordelijkheden
@@ -43,7 +32,6 @@ export type DiscoverableActuator<FATE extends string> = {
    - name: label given to the sensor by the external app
    - type: sensor type (eg ZHASwitch)
 */
-@Injectable()
 export abstract class InterfaceBase<FTE extends string, FATE extends FTE> {
   protected _sensorIgnoreList: UID[] = []
   protected _sensorChannels: Sensor<FTE>[] = []
@@ -57,6 +45,9 @@ export abstract class InterfaceBase<FTE extends string, FATE extends FTE> {
     protected readonly _config: ConfigService,
     protected readonly _mqttDriver: MqttDriver,
   ) {
+    // set log context
+    this._log.setContext(_interfaceName)
+
     this._interfaceConfig = new InterfaceConfig(this._config, _interfaceName, _log)
   }
 
@@ -93,7 +84,9 @@ export abstract class InterfaceBase<FTE extends string, FATE extends FTE> {
           this._log.debug(`Unable to derive type of ${s.sensorIgnoreLogInfo}`)
           return
         }
-        this.addSensor(s.name, new Sensor(s.id, topic, s.foreignType, measurementType, s.state))
+
+        const sensor = new Sensor(s.id, topic, s.foreignType, measurementType, s.state, s)
+        this.addSensor(s.name, sensor)
       })
 
     // Transform defined sensors
@@ -115,7 +108,7 @@ export abstract class InterfaceBase<FTE extends string, FATE extends FTE> {
 
   private addSensor(originalName: string, sensor: Sensor<FTE>, lastupdated?: Date): void {
     this._log.log(
-      `Found sensor "${originalName}" => "${sensor.topic}", type=${sensor.measurementType}, ` +
+      `Adding sensor "${originalName}" => "${sensor.topic}", type=${sensor.measurementType}, ` +
         `id=${sensor.id}${!sensor.state ? '' : ', state=' + JSON.stringify(sensor.state).replace(/\\"/, `"`)} `,
     )
 
@@ -127,6 +120,7 @@ export abstract class InterfaceBase<FTE extends string, FATE extends FTE> {
   }
 
   public discoverActuators(actuatorList: DiscoverableActuator<FATE>[], typeMapper: ActuatorTypeMapper<FATE>) {
+    const now = new Date()
     const typeIndicators = this._interfaceConfig.sensorTypeIndicatorList
     // store the UID's of sensors to be ignored
     this._actuatorIgnoreList = actuatorList
@@ -159,20 +153,57 @@ export abstract class InterfaceBase<FTE extends string, FATE extends FTE> {
         }
 
         // push new sensor to channel list
-        const actuator = new Actuator(a.id, topic, a.foreignType, actuatorType)
-        this.addActuator(a.name, actuator)
-      })
+        const measurementType = ACTUATOR_TO_MEASUREMENT_TYPE[actuatorType]
+        const sensor = new Sensor(a.id, topic, a.foreignType, measurementType)
+        const actuator = new Actuator(a.id, topic, a.foreignType, actuatorType, sensor, a)
 
+        this.addSensor(a.name, sensor, now)
+        this.addActuator(a.name, actuator)
+        if (a) this.sendSensorStateUpdate(sensor.id, a.state)
+      })
     //TODO Defined actuators nog toevoegen
   }
 
   private addActuator(originalName: string, actuator: Actuator<FATE>): void {
-    const logMessage = `Found actuator "${originalName}" => "${actuator.topic}", type=${actuator.actuatorType}, id=${actuator.id}`
+    const logMessage = `Adding actuator "${originalName}" => "${actuator.topic}", type=${actuator.actuatorType}, id=${actuator.id}`
     this._log.log(logMessage)
 
     // push new sensor to channel list
     this._actuatorChannels.push(actuator)
   }
 
-  protected abstract sendSensorStateUpdate(id: UID, state: any, lastupdated?: Date): void
+  //TODO: updaten v/d sensor state moet hier gebeuren (dus geen abstracte functie)
+  protected sendSensorStateUpdate(id: UID, state: any, lastupdated?: Date) {
+    const channel = this._sensorChannels.find(s => s.id === id)
+    if (!channel) {
+      this._log.error(`Sensor channel ${id} not found - unable to send update`)
+      return
+    }
+    const topicInfix = channel.topic
+    const measurementValue = this.transformSensorState(channel, state)
+
+    if (!measurementValue) {
+      this._log.error(`Unable to transform foreign state ${JSON.stringify(state)}`)
+      return
+    }
+    if (typeof measurementValue === 'object' && 'type' in measurementValue)
+      delete (measurementValue as SensorReadingValueWithoutType).type
+
+    const now = lastupdated ?? new Date()
+    channel.state = { time: now, value: measurementValue }
+    const update = {
+      origin: this._interfaceName,
+      time: now,
+      type: channel.measurementType,
+      value: measurementValue,
+    }
+
+    try {
+      this._mqttDriver.sendSensorStateUpdate(topicInfix, update)
+    } catch (error) {
+      this._log.error(JSON.stringify(error))
+    }
+  }
+
+  protected abstract transformSensorState(channel: Sensor<FTE>, state: any): SensorReadingValue | undefined
 }
